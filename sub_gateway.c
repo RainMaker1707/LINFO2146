@@ -1,26 +1,63 @@
 #include "contiki.h"
-#include "sub_gateway.h" // Include header file for shared definitions
+#include <stdio.h> /* For printf() */
 
-#define LIGHT_THRESHOLD 0.75
+#include "contiki.h"
+#include "net/netstack.h"
+#include "net/nullnet/nullnet.h"
+#include <string.h>
+#include <stdio.h> /* For printf() */
+
+#define LIGHT_THRESHOLD 50
+
+/* Log configuration */
+#include "sys/log.h"
+#define LOG_MODULE "App"
+#define LOG_LEVEL LOG_LEVEL_INFO
+
+/* Configuration */
+#define SEND_INTERVAL (8 * CLOCK_SECOND)
+
 
 PROCESS(sub_gateway_process, "Sub-Gateway Process");
 AUTOSTART_PROCESSES(&sub_gateway_process);
 
-PROCESS_THREAD(sub_gateway_process, ev, data)
+void input_callback(const void *data, uint16_t len,
+  const linkaddr_t *src, const linkaddr_t *dest)
 {
-  PROCESS_BEGIN();
-
-  while (1) {
-    PROCESS_WAIT_EVENT_UNTIL(ev == light_event);
-
+  if(len == sizeof(unsigned)) {
+    unsigned light_level;
     // Receive light level from the sensor
-    int light_level = *((int *)data);
-
+    memcpy(&light_level, data, sizeof(light_level));
+    LOG_INFO("Received light sensor Info: %u from ", light_level);
+    LOG_INFO_LLADDR(src);
+    LOG_INFO_("\n");
+    
     // Check if light level is below threshold
     if (light_level < LIGHT_THRESHOLD) {
       // Send command to turn on the light bulb
-      process_post(&light_bulb_process, control_event, NULL);
+      unsigned message = 150;
+      
+      LOG_INFO("Sending TURN_OFF to lightbulb ");
+      LOG_INFO_("\n");
+      memcpy(nullnet_buf, &message, sizeof(message));
+      nullnet_len = sizeof(message);
     }
+  }
+}
+
+PROCESS_THREAD(sub_gateway_process, ev, data)
+{
+  static struct etimer periodic_timer;
+
+  PROCESS_BEGIN();
+
+  nullnet_set_input_callback(input_callback);
+
+  etimer_set(&periodic_timer, SEND_INTERVAL);
+  while(1) {
+    PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
+    NETSTACK_NETWORK.output(NULL);
+    etimer_reset(&periodic_timer);
   }
 
   PROCESS_END();
