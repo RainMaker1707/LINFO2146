@@ -35,9 +35,10 @@ void input_callback(const void *data, uint16_t len,
   unsigned message;
   memcpy(&message, data, sizeof(message));
 
-  // 150 = TURN_OFF
+  // 150 = TURN_ON
   if (message == 150){
-    turn_Off();
+    turn_on();
+    // TODO: turn off after a certain timer
     LOG_INFO("Light Bulb: %s\n", lightbulb_On ? "ON" : "OFF");
   }
   
