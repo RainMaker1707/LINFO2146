@@ -1,7 +1,4 @@
 #include "contiki.h"
-#include <stdio.h> /* For printf() */
-
-#include "contiki.h"
 #include "net/netstack.h"
 #include "net/nullnet/nullnet.h"
 #include <string.h>
