@@ -14,11 +14,11 @@
 
 bool lightbulb_On = true;
 
-void turn_Off() {
+void turn_off() {
     lightbulb_On = false;
 }
 
-void turn_On() {
+void turn_on() {
   lightbulb_On = true;
 }
 
