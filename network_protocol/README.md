@@ -1,5 +1,8 @@
 # Network Reliable Protocol
 
+In the following TCP means reliable connection and UDP means unreliable.\
+This protocol is not exactly UDP or TCP but it is inspired from they behavior.
+
 ## Goal
 
 ## V1
@@ -34,6 +37,7 @@ Packets are composed of 384  bits. So 48 bytes.\
 
 ###### Flags
     Flags are stored on the second byte of the Header.\
+    You can add the Flags you want to use at the same time, flags constant are stored in flags.h.\
 
  - **PTC** Protocol: 0 if UDP, 1 if TCP. (TCP for V3)
  - **SYN** Synchronization: Used to engage a connection.
@@ -45,13 +49,11 @@ Packets are composed of 384  bits. So 48 bytes.\
  - **PRT** Parent: Packet sent to ask to become the child to a parent
 
 ##### Packet number
-    Third bytes of the Header, store the packet number for reliable connection
+    Third bytes of the Header, store the packet number for reliable connection.
+
 ##### Checksum
     Fourth byte, need to find an explanation by it fill the byte gap 
 
-
-### Encoder
-### Decoder
 ### Tree formation
 ### Send packet
 ### Receive packet
