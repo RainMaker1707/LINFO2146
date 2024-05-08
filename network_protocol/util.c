@@ -37,15 +37,29 @@ uint32_t ipv4_to_bits(char* ip){
 
 /*
     Convert an int array to an 8 bits input to add in the packet
-    @Param: int* flags: int array, len 8, if flags[i] <= 0 then bit[i] == 0, else bit[i] == 1 and then flag is set 
+    @Param: int* flags: int array, len 8, if flags[i]<0 throw error, else if flags[i] == 0 then bit[i] == 0, else bit[i] == 1 and then flag is set 
+                        [SYN, ACK, NACK, CNT, TR3, RST, FIN, TEA]
     @Return: uint8_t where bit[i] is a flag described in the README.md of this directory 
 */
 uint8_t flags_to_bits(int* flags){
-    
+    uint8_t buffer = 0;
+    for(int i = 0; i<8; i++){
+        if(flags[i] < 0){
+            printf("\033[1;31mError flags[%d]<0 not allowed\033[0m\n", i);
+            exit(1);
+        }
+        buffer = buffer << 1;
+        if(flags[i] > 0) { buffer |= 1;}
+    }
+    return buffer;
 }
 
 
-void main(){
-    char ip[16] = "192.255.255.255";
-    ipv4_to_bits(&(ip[0]));
+int main(){
+    int flags[8];
+    for(int i = 0; i<8; i++){flags[i]=0;}
+    flags[2] = 1;
+    uint8_t final = flags_to_bits(flags);
+    printf("Final flag uint8_t: %u\n", final);
+    return 0;    
 }
