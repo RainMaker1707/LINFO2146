@@ -1,16 +1,6 @@
 #include "util.h"
 
 
-struct packet {
-    uint32_t src; // Source IPv4 32 bits
-    uint32_t dst; // Destination IPv4 32 bits
-    uint8_t packet_number; // just for reliability (like TCP)
-    uint8_t flag; // 8 bits (as TCP) if one bit is set it is a certain flag for example 10000000 == SYN packet, 01000000 == ACK packet ...
-    uint16_t checksum;
-    uint32_t payload; // Payload converted in 64 bits
-};
-
-
 /*
     Convert a ipv4 in string to a 32bits uint to add in the packet
     @Params: char* ip: String of 15 char at most, formatted as an ipv4 human readable
@@ -38,7 +28,7 @@ uint32_t ipv4_to_bits(char* ip){
 /*
     Convert an int array to an 8 bits input to add in the packet
     @Param: int* flags: int array, len 8, if flags[i]<0 throw error, else if flags[i] == 0 then bit[i] == 0, else bit[i] == 1 and then flag is set 
-                        [SYN, ACK, NACK, CNT, TR3, RST, FIN, TEA]
+                        [PTC, SYN, ACK, NACK, RST, FIN, DIS, PRT]
     @Return: uint8_t where bit[i] is a flag described in the README.md of this directory 
 */
 uint8_t flags_to_bits(int* flags){
@@ -59,7 +49,8 @@ uint8_t flags_to_bits(int* flags){
     Create a packet and compute the checksum.
     This function has to return a packet correctly formatted OR reject it.
     The checksum will ensure the packet has not been corrupted while the transportation.
-    @Params: flags
+    @Params: flags int array, len 8, if flags[i]<0 throw error, else if flags[i] == 0 then bit[i] == 0, else bit[i] == 1 and then flag is set 
+                        [PTC, SYN, ACK, NACK, RST, FIN, DIS, PRT]
     @Params: packet_number
     @Params: source_ip
     @Params: dest_ip
@@ -68,7 +59,21 @@ uint8_t flags_to_bits(int* flags){
 */
 packet_t* create_packet(uint8_t flags, uint8_t packet_number, uint32_t source_ip, uint32_t dest_ip, uint32_t payload){
     packet_t* packet = malloc(sizeof(packet_t));
+    packet->flags = flags;
     return packet;
+}
+
+
+reader_pt check_read(packet_t packet) {
+    reader_t* toRet = (reader_t*) malloc(sizeof(reader_t));
+    if(check_packet(packet)){
+        toRet->checker = true;
+        toRet->payload = read_payload(packet);
+    } else {
+        toRet->checker = false;
+        toRet->payload = NULL;
+    }
+    return toRet;
 }
 
 
