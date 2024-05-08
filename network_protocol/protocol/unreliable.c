@@ -40,7 +40,7 @@ list_t* discover_neighbor(){
 
 }
 
-void attach_parent(node_t* node){
+void attach_parent(mote_t* mote){
 
 }
 
