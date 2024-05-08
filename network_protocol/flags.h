@@ -6,5 +6,4 @@
 #define FIN  4 
 #define DIS  2
 #define PRT  1
-
 #define UDP 0 // if using UDP all flags to 0
