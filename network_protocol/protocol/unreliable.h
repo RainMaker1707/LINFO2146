@@ -1,29 +1,10 @@
-#include "../util.h"
+#include "../utils/packet.h"
+#include "../utils/list.h"
 
 #define UNICAST 0
 #define BROADCAST 1
 #define MULTICAST 2
 
-
-
-typedef struct node{
-    int rank;
-    char* adress;
-    int signal_strenght;
-    unsigned long long last_time_heard;
-} node_t;
-
-typedef node_t child_t;
-typedef node_t parent_t;
-
-typedef struct child_list{
-    child_t* head;
-    child_t* tail;
-    child_t* current;
-}child_list_t;
-
-
-typedef child_list_t neighbor_list_t;
 
 
 
@@ -39,23 +20,11 @@ void unreliable_send(packet_t* packet, int mode, char* address);
 
 /*
 */
-neighbor_list_t* discover_neighbor();
+list_t* discover_neighbor();
 
 /*
 */
-void attach_parent(neighbor_list_t* neighbor_list);
-
-/*
-*/
-child_list_t* create_child_list();
-
-/*
-*/
-void add_child(child_list_t* child_list);
-
-/*
-*/
-void free_child_list(child_list_t* child_list);
+void attach_parent(mote_t* mote);
 
 /*
 */

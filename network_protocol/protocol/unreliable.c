@@ -36,30 +36,17 @@ void unreliable_send(packet_t* packet, int mode, char* address){
 }
 
 
-neighbor_list_t* discover_neighbor(){
+list_t* discover_neighbor(){
 
 }
 
-void attach_parent(neighbor_list_t* neighbor_list){
-
-}
-
-child_list_t* create_child_list(){
-
-}
-
-void add_child(child_list_t* child_list){
-
-}
-
-void free_child_list(child_list_t* child_list){
+void attach_parent(node_t* node){
 
 }
 
 void unreliable_wait_receive(char * buffer){
 
 }
-
 
 // ########################" END API ######################
 

@@ -1,4 +1,4 @@
-#include "util.h"
+#include "packet.h"
 
 packet_t* create_packet(uint8_t flags, uint8_t packet_number, char* source_ip, char* dest_ip, char* payload){
     packet_t* packet = malloc(sizeof(packet_t));
