@@ -1,4 +1,4 @@
-#define PTC  128  // Srt the Bit to TCP packet (not implemented) other flag are use t
+#define TCP  128  // Srt the Bit to TCP packet (not implemented) other flag are use t
 #define SYN  64  
 #define ACK  32
 #define NACK 16
