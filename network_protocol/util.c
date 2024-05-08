@@ -57,9 +57,13 @@ uint8_t flags_to_bits(int* flags){
     @Params: payload
     @Return: packet_t containing all the information OR reject the packet and return NULL
 */
-packet_t* create_packet(uint8_t flags, uint8_t packet_number, uint32_t source_ip, uint32_t dest_ip, uint32_t payload){
+packet_t* create_packet(uint8_t flags, uint8_t packet_number, char* source_ip, char* dest_ip, char* payload){
     packet_t* packet = malloc(sizeof(packet_t));
     packet->flags = flags;
+    packet->packet_number = packet_number;
+    packet->src = *source_ip;
+    packet->dst = *dest_ip;
+    packet->checksum = 0xff; // TODO, for all 1byte at 1
     return packet;
 }
 
