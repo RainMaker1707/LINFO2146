@@ -11,6 +11,11 @@ struct packet {
 };
 
 
+/*
+    Convert a ipv4 in string to a 32bits uint to add in the packet
+    @Params: char* ip: String of 15 char at most, formatted as an ipv4 human readable
+    @Return: uint32_t which represent the ipv4
+*/
 uint32_t ipv4_to_bits(char* ip){
     uint32_t buffer = 0;
     uint8_t ip_part = 0;
@@ -30,8 +35,13 @@ uint32_t ipv4_to_bits(char* ip){
 }
 
 
+/*
+    Convert an int array to an 8 bits input to add in the packet
+    @Param: int* flags: int array, len 8, if flags[i] <= 0 then bit[i] == 0, else bit[i] == 1 and then flag is set 
+    @Return: uint8_t where bit[i] is a flag described in the README.md of this directory 
+*/
 uint8_t flags_to_bits(int* flags){
-
+    
 }
 
 
