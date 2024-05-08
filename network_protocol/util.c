@@ -55,6 +55,25 @@ uint8_t flags_to_bits(int* flags){
 }
 
 
+/*
+    Create a packet and compute the checksum.
+    This function has to return a packet correctly formatted OR reject it.
+    The checksum will ensure the packet has not been corrupted while the transportation.
+    @Params: flags
+    @Params: packet_number
+    @Params: source_ip
+    @Params: dest_ip
+    @Params: payload
+    @Return: packet_t containing all the information OR reject the packet and return NULL
+*/
+packet_t* create_packet(uint8_t flags, uint8_t packet_number, uint32_t source_ip, uint32_t dest_ip, uint32_t payload){
+    packet_t* packet = malloc(sizeof(packet_t));
+    return packet;
+}
+
+
+
+// ONLY FOR TEST PURPOSES
 int main(){
     int flags[8];
     for(int i = 0; i<8; i++){flags[i]=0;}
