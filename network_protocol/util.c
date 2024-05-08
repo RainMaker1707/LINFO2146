@@ -23,7 +23,7 @@ uint8_t compute_checksum(packet_t* packet){
     return 0xff;
 }
 
-reader_pt check_read_packet(packet_t* packet) {
+reader_t* check_read_packet(packet_t* packet) {
     reader_t* toRet = (reader_t*) malloc(sizeof(reader_t));
     if(check_packet(packet)){
         toRet->checker = true;
@@ -96,38 +96,38 @@ uint8_t* retrieve_flags(packet_t* packet){
 
 
 // ONLY FOR TESTS PURPOSES
-void print_flags(packet_t* packet){ 
-    uint8_t* flags = retrieve_flags(packet);
-    printf("[");
-    for(int i = 0; i<7; i++){
-        printf("%d, ", flags[i]);
-    }
-    printf("%d]\n", flags[7]);
-    free(flags);
-}
+// void print_flags(packet_t* packet){ 
+//     uint8_t* flags = retrieve_flags(packet);
+//     printf("[");
+//     for(int i = 0; i<7; i++){
+//         printf("%d, ", flags[i]);
+//     }
+//     printf("%d]\n", flags[7]);
+//     free(flags);
+// }
 
-int main(){
-    packet_t packet;
-    packet.checksum = 0xff;
-    packet.flags = TCP+SYN+ACK;
-    packet.packet_number = 0;
-    packet.version = VERSION;
-    packet.src = "aaaaaaaaaaaaaaaaa";
-    packet.dst = "bbbbbbbbbbbbbbbbb";
-    packet.payload = "Hello UDP :)";
-    char* buffer  = encode(&packet);
+// int main(){
+//     packet_t packet;
+//     packet.checksum = 0xff;
+//     packet.flags = TCP+SYN+ACK;
+//     packet.packet_number = 0;
+//     packet.version = VERSION;
+//     packet.src = "aaaaaaaaaaaaaaaaa";
+//     packet.dst = "bbbbbbbbbbbbbbbbb";
+//     packet.payload = "Hello UDP :)";
+//     char* buffer  = encode(&packet);
 
-    packet_t* decoded = decode(buffer);
+//     packet_t* decoded = decode(buffer);
     
-    printf("FLAGS: "); 
-    print_flags(decoded);
+//     printf("FLAGS: "); 
+//     print_flags(decoded);
 
 
-    printf("SRC: %s\n",decoded->src);
-    printf("DST: %s\n", decoded->dst);
-    printf("Payload: %s\n", decoded->payload);
+//     printf("SRC: %s\n",decoded->src);
+//     printf("DST: %s\n", decoded->dst);
+//     printf("Payload: %s\n", decoded->payload);
 
-    free_packet(decoded);
-    free(buffer);
-    exit(0);
-}
+//     free_packet(decoded);
+//     free(buffer);
+//     exit(0);
+// }

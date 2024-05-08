@@ -24,8 +24,6 @@ typedef struct reader{
 } reader_t;
 
 
-typedef reader_t* reader_pt;
-
 /*
     Create a packet and compute the checksum.
     This function has to return a packet correctly formatted OR reject it.
@@ -61,7 +59,7 @@ uint8_t compute_checksum(packet_t* packet);
         char* payload -> if check == true, char* that contain the payload, else NULL
     }
 */
-reader_pt check_read(packet_t* packet);
+reader_t* check_read_packet(packet_t* packet);
 
 /*
     Encode the packet in a char buffer the packet to send
