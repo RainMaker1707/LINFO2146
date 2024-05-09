@@ -18,8 +18,7 @@ void multicast_unreliable_send(char* buffer, char* group_address){
 
 
 void unreliable_send(packet_t* packet, int mode, char* address){
-    //char* buffer = encode(packet);
-    char* buffer;
+    char* buffer = encode(packet);
     switch(mode){
         case UNICAST: 
             unicast_unreliable_send(buffer, address);
@@ -36,7 +35,7 @@ void unreliable_send(packet_t* packet, int mode, char* address){
     }
 }
 
-// TODO: test function;
+
 mote_t* search_max_under_x(list_t* neighbors, int x){
     neighbors->current = neighbors->head->next;
     int max = neighbors->head->mote->signal_strenght;
@@ -61,6 +60,7 @@ void attach_to_tree(list_t* neighbors){
     while(!attached){
         mote_t* mote = search_max_under_x(neighbors, old_max);
         attached = attach_parent(mote);
+        if(!attached) old_max = mote->signal_strenght;
     }
 }
 
@@ -83,9 +83,11 @@ list_t* discover_neighbor(){
 }
 
 bool attach_parent(mote_t* mote){
+    if(parent != NULL) { return false; }
     // Send PRT to parent
     // If receive PRT+ACK add the mote has parent and return true
     // If receive PRT+NACK refused, so just return false
+    return false;
 }
 
 void unreliable_wait_receive(char * buffer){
