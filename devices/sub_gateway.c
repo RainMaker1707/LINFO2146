@@ -34,7 +34,7 @@ void input_callback(const void *data, uint16_t len,
       // Send command to turn on the light bulb
       unsigned message = 150;
       
-      LOG_INFO("Sending TURN_OFF to lightbulb ");
+      LOG_INFO("Sending TURN_ON to lightbulb ");
       LOG_INFO_("\n");
       memcpy(nullnet_buf, &message, sizeof(message));
       nullnet_len = sizeof(message);

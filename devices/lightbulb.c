@@ -15,7 +15,7 @@
 bool lightbulb_On = true;
 
 void turn_off() {
-    lightbulb_On = false;
+  lightbulb_On = false;
 }
 
 void turn_on() {
