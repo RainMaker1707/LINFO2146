@@ -3,7 +3,6 @@
 #include "net/netstack.h"
 #include "net/nullnet/nullnet.h"
 #include "network_protocol/protocol/unreliable.h"
-#include "network_protocol/utils/packet.h"
 
 /* Log configuration */
 #include "sys/log.h"
@@ -11,7 +10,7 @@
 #define LOG_LEVEL LOG_LEVEL_INFO
 
 /* Configuration */
-#define Z_NUMBER = 5
+#define Z_NUMBER 5
 #define SEND_INTERVAL (8 * CLOCK_SECOND)
 
 PROCESS(mobile_maintenance_process, "mobile maintenance process");
@@ -44,19 +43,20 @@ PROCESS_THREAD(mobile_maintenance_process, ev, data)
 
     PROCESS_BEGIN();
 
-    nullnet_set_input_callback(maintenance_callback)
+    nullnet_set_input_callback(maintenance_callback);
 
     etimer_set(&periodic_timer, SEND_INTERVAL);
     while(1) {
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
 
-        char* src = linkaddr_to_str(&linkaddr_node_addr);
-        char* dest = NULL //TODO get address of the light sensor
+
+        char* src = NULL; //TODO change
+        char* dest = NULL; //TODO get address of the light sensor
         packet_t* message_pkt = create_packet(UDP, 0, src, dest,"maintenance");
 
-        char* buffer = encode(message_pkt);
+        //char* buffer = encode(message_pkt);
         unreliable_send(message_pkt, UNICAST, dest);
-
+        
         packets_sent++;
         if(packets_sent == Z_NUMBER){
             break;

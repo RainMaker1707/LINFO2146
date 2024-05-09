@@ -90,7 +90,54 @@ uint8_t* retrieve_flags(packet_t* packet){
     return flags;
 }
 
+int get_hex_val(char c) {
+  if (c >= '0' && c <= '9') {
+    return c - '0';
+  } else if (c >= 'A' && c <= 'F') {
+    return c - 'A' + 10;
+  } else if (c >= 'a' && c <= 'f') {
+    return c - 'a' + 10;
+  } else {
+    return -1;
+  }
+}
 
+char* linkaddr_to_char(const linkaddr_t* addr) {
+  if (addr == NULL) {
+    return NULL;
+  }
+
+  char* str = malloc(16*sizeof(char));
+  if (str == NULL) {
+    return NULL;
+  }
+
+  for(int i = 0; i<LINKADDR_SIZE; i++){
+    sprintf(str + 2*i, "%02x", addr->u8[i]);
+  }
+
+  return str; 
+}
+
+linkaddr_t* char_to_linkaddr(char* str) {
+  if (str == NULL) {
+    return NULL;
+  }
+
+  linkaddr_t* addr = (linkaddr_t*)malloc(sizeof(linkaddr_t));
+  if (addr == NULL) {
+    return NULL;
+  }
+  
+  for (int i = 0; i < LINKADDR_SIZE; i++) {
+    int char1 = get_hex_val(str[2*i]);
+    int char2 = get_hex_val(str[2*i + 1]);
+    unsigned char c = (char1 << 4) | char2;
+    addr->u8[i] = c;  
+  }
+
+  return addr;
+}
 
 // ###########################" END UTIL ##################################"
 

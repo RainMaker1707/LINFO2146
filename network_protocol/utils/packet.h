@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
-
+#include "net/netstack.h" // import for linkaddr_t
 #include "flags.h" // Contain constant for flags. Add them to have multiple flags (not all combination works)
 
 #define VERSION 0x01
@@ -85,3 +85,24 @@ void free_packet(packet_t* packet);
                 [1, 1, 1, 0, 0 ,0 ,0 ,0] == TCP SYN ACK
 */
 uint8_t* retrieve_flags(packet_t* packet);
+
+/*
+    Computes the int value of a char representing a hexadecimal value
+    @Param: char c: the char to convert
+    @Returns: int value of the char in hexadecimal
+*/
+int get_hex_val(char c);
+
+/*
+    Convert a linkaddr_t address to a char* address
+    @Param: linkaddr_t* addr: the linkaddr_t to convert
+    @Returns: char* string of the linkaddr_t
+*/
+char* linkaddr_to_char(const linkaddr_t* addr);
+
+/*
+    Convert a char* address to a linkaddr_t address
+    @Param: char* str: the string to convert
+    @Returns: linkaddr_t* address of the string
+*/
+linkaddr_t* char_to_linkaddr(char* str) 
