@@ -105,4 +105,4 @@ char* linkaddr_to_char(const linkaddr_t* addr);
     @Param: char* str: the string to convert
     @Returns: linkaddr_t* address of the string
 */
-linkaddr_t* char_to_linkaddr(char* str) 
+linkaddr_t* char_to_linkaddr(char* str);
