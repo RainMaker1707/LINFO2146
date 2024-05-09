@@ -1,2 +1,2 @@
-# LINFO2146 MObile Embedded System Project
+# LINFO2146 Mobile Embedded System Project
 ## Smart Green House
