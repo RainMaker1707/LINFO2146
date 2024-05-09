@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <time.h>
 
 typedef struct mote{
     int rank;
@@ -30,3 +31,7 @@ void add_child(list_t* list, mote_t* mote);
 /*
 */
 void free_list(list_t* list);
+
+/*
+*/
+mote_t* create_mote(int rank, char* adress, int signal_strenght);

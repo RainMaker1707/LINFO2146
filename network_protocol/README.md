@@ -59,7 +59,12 @@ Packets are composed of 384  bits. So 48 bytes.\
 ### Receive packet
 
 ### Unicast
+
 ### Broadcast
+Packet X is received with dst adress set to the broadcast ipv6 adress.\
+Two possibilities:\
+ - Node has child and then read message, take action if needed and finally forward the message to all its childs
+ - Node has not child, it will read the message and then discard it after taking action if needed
 
 
 

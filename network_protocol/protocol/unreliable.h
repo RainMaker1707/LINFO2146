@@ -5,7 +5,9 @@
 #define BROADCAST 1
 #define MULTICAST 2
 
-
+list_t* childs = NULL;
+list_t* neighbors = NULL;
+mote_t* parent = NULL;
 
 
 /*
@@ -24,7 +26,11 @@ list_t* discover_neighbor();
 
 /*
 */
-void attach_parent(mote_t* mote);
+void attach_to_tree(list_t* neighbors);
+
+/*
+*/
+bool attach_parent(mote_t* mote);
 
 /*
 */

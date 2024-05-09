@@ -46,6 +46,15 @@ void free_list(list_t* list){
     free(list);
 }
 
+mote_t* create_mote(int rank, char* adress, int signal_strenght){
+    mote_t* mote = malloc(sizeof(mote_t));
+    mote->rank = rank;
+    mote->adress = adress;
+    mote->signal_strenght = signal_strenght;
+    mote->last_time_heard = clock();
+    return mote;
+}
+
 
 
 // ONLY for test purposes
