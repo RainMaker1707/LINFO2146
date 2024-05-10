@@ -1,4 +1,40 @@
-#include "list.h"
+#include <stdlib.h>
+#include <stdio.h>
+#include <time.h>
+
+typedef struct mote{
+    int rank;
+    char* adress;
+    int signal_strenght;
+    unsigned long long last_time_heard;
+} mote_t;
+
+typedef struct node {
+    mote_t* mote;
+    struct node* next;
+} node_t;
+
+typedef struct list{
+    node_t* head;
+    node_t* tail;
+    node_t* current;
+}list_t;
+
+/*
+*/
+list_t* create_list();
+
+/*
+*/
+void add_child(list_t* list, mote_t* mote);
+
+/*
+*/
+void free_list(list_t* list);
+
+/*
+*/
+mote_t* create_mote(int rank, char* adress, int signal_strenght);
 
 
 list_t* create_list(){
@@ -54,24 +90,3 @@ mote_t* create_mote(int rank, char* adress, int signal_strenght){
     mote->last_time_heard = clock();
     return mote;
 }
-
-
-
-// ONLY for test purposes
-
-// int main(){
-//     list_t* list = create_list();
-//     mote_t* mote = malloc(sizeof(mote_t));
-//     mote->adress = "OK";
-//     mote_t* mote2 = malloc(sizeof(mote_t));
-//     mote2->adress = "OK2";
-//     add_child(list, mote);
-//     add_child(list, mote2);
-//     list->current = list->head;
-//     while(list->current != list->tail){
-//         printf("ADRESS: %s\n", list->current->mote->adress);
-//         list->current = list->current->next;
-//     }
-//     printf("ADRESS: %s\n", list->tail->mote->adress);
-//     exit(0);
-// }
