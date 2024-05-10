@@ -34,8 +34,8 @@ PROCESS_THREAD(sender_process, ev, data)
 
     while(1) {
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
-        packet_t *packet = create_packet(DIS, 0, "aaaaaaaaaaaaaaaa", "aaaaaaaaaaaaaaaa", "Hello net!");
-        unreliable_send(packet, BROADCAST);
+        //packet_t *packet = create_packet(UDP, 0, linkaddr_node_addr, "aaaaaaaaaaaaaaaa", "Hello net!");
+        //unreliable_send(packet, BROADCAST);
         etimer_reset(&periodic_timer);
     }
     PROCESS_END();

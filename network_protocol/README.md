@@ -7,7 +7,7 @@ This protocol is not exactly UDP or TCP but it is inspired from they behavior.
 
 ## V1
 ### Packet
-Packets are composed of 384  bits. So 48 bytes.\
+Packets are composed of 256  bits. So 32 bytes.\
 ```
 
   0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 
@@ -15,14 +15,10 @@ Packets are composed of 384  bits. So 48 bytes.\
  |     Version   |        Flags        |        #Packet        |        Checksum       |
  +---------------+---------------------+-----------------------+-----------------------+
  |                                                                                     |
- |                                Source IPv6                                          |
- |                                                                                     |
- |                                                                                     |
+ |                                Source linkaddr                                      |
  +-------------------------------------------------------------------------------------+
  |                                                                                     |
- |                              Destination IPv6                                       |
- |                                                                                     |
- |                                                                                     |
+ |                              Destination linkaddr                                   |
  +-------------------------------------------------------------------------------------+
  |                                                                                     |
  |                               Payload 96 bits                                       |
@@ -82,14 +78,10 @@ TODO
  |     Version   |        Flags        |        #Packet        |        Checksum       |
  +---------------+---------------------+-----------------------+-----------------------+
  |                                                                                     |
- |                                Source IPv6                                          |
- |                                                                                     |
- |                                                                                     |
+ |                                Source linkaddr                                      |
  +-------------------------------------------------------------------------------------+
  |                                                                                     |
- |                              Destination IPv6                                       |
- |                                                                                     |
- |                                                                                     |
+ |                              Destination linkaddr                                   |
  +-------------------------------------------------------------------------------------+
  |                                                                                     |
  |                               Payload 96 bits                                       |
