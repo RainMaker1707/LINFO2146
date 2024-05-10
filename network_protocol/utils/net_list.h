@@ -188,6 +188,10 @@ void process_neighbors_last_time(list_t* list){
     printf("Checking neighbor is done\n");
 
 }
+
+/*
+    Simple O(n) search
+*/
 bool list_contains_src(list_t* list, linkaddr_t* src){
     if(list->head != NULL){
         list->current = list->head;
