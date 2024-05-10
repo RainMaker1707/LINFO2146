@@ -173,17 +173,16 @@ void process_neighbors_last_time(list_t* list){
             return;
         }
     }
-    
+    node_t* tmp = list->current;
     while(list->current != list->tail){
         printf("Checking neighbor while loop\n");
         if(clock_time() - list->current->mote->last_time_heard > alive_difference){
+            tmp->next = list->current->next;
             free(list->current->mote);
             free(list->current);
-            list->head = NULL;
-            list->tail = NULL;
-            list->current = NULL;
             return;
         }
+        tmp = list->current;
         list->current = list->current->next;
     }
     printf("Checking neighbor is done\n");
