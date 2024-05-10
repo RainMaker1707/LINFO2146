@@ -10,7 +10,7 @@
 #include "protocol/unreliable.h"
 
 
-#define DIS_INTERVAL (60 * CLOCK_SECOND)
+#define DIS_INTERVAL (120 * CLOCK_SECOND)
 #define ALIVE_INTERVAL (10 * CLOCK_SECOND)
 
 PROCESS(keep_alive_process, "alive process");
@@ -29,7 +29,7 @@ PROCESS_THREAD(keep_alive_process, ev, data)
         
         packet_t *packet = create_packet(FIN, 0, &linkaddr_node_addr, NULL, "alive");
         unreliable_send(packet, BROADCAST);
-
+        free_packet(packet);
         etimer_reset(&periodic_timer);
     }
     PROCESS_END();
@@ -41,7 +41,7 @@ PROCESS_THREAD(dis_process, ev, data){
     PROCESS_BEGIN();
     etimer_set(&period, DIS_INTERVAL);
     while(1){
-        packet_t *packet = create_packet(DIS, 0, &linkaddr_node_addr, NULL, "alive");
+        packet_t *packet = create_packet(DIS, 0, &linkaddr_node_addr, NULL, "DISCOVER");
         unreliable_send(packet, BROADCAST);
         free_packet(packet);
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&period));

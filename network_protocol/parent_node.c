@@ -19,7 +19,7 @@ AUTOSTART_PROCESSES(&sender_process,&keep_alive_process, &dis_process, &keep_ali
 
 
 void callback(packet_t* packet){
-    LOG_INFO("NODE CALLBACK\n");
+    LOG_INFO("PARENT NODE CALLBACK\n");
 }
 
 
