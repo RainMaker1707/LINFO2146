@@ -1,12 +1,3 @@
-
-/**
- * \file
- *         Light sensor 
- * \author
- *         Cyril Lapierre
- */
-
-
 #include "contiki.h"
 #include "net/netstack.h"
 #include "net/nullnet/nullnet.h"

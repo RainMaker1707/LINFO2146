@@ -12,7 +12,7 @@
 /* Configuration */
 #define SEND_INTERVAL (8 * CLOCK_SECOND)
 
-bool lightbulb_On = true;
+bool lightbulb_On = false;
 
 void turn_off() {
   lightbulb_On = false;
@@ -36,9 +36,15 @@ void input_callback(const void *data, uint16_t len,
   memcpy(&message, data, sizeof(message));
 
   // 150 = TURN_ON
-  if (message == 150){
+  if (message == 150 && !lightbulb_On){
+    //turn on
     turn_on();
-    // TODO: turn off after a certain timer
+    LOG_INFO("Light Bulb: %s\n", lightbulb_On ? "ON" : "OFF");
+    
+    // turn off after a certain time
+    clock_wait(SEND_INTERVAL*2);
+    
+    turn_off();
     LOG_INFO("Light Bulb: %s\n", lightbulb_On ? "ON" : "OFF");
   }
   

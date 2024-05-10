@@ -4,7 +4,7 @@
 #include <string.h>
 #include <stdio.h> /* For printf() */
 
-#define LIGHT_THRESHOLD 50
+#define LIGHT_THRESHOLD 20
 
 /* Log configuration */
 #include "sys/log.h"
