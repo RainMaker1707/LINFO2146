@@ -106,11 +106,17 @@ void unreliable_send(packet_t* packet, int mode){
 }
 
 
+
 void receive_dis(packet_t* packet, const linkaddr_t* src){
-    mote_t* mote = create_mote(0, packet->src, 10);
-    // TODO check if addr is not already in neighbors
-    add_child(neighbors, mote);
-    LOG_INFO("Add mote in neighbors list\n");
+    
+    LOG_INFO("CONTAINS: %d    :", list_contains_src(neighbors, (linkaddr_t*)src));
+    LOG_INFO_LLADDR(src);
+    if(!list_contains_src(neighbors, (linkaddr_t*)src)) {
+        mote_t* mote = create_mote(0, packet->src, 10);
+        // TODO check if addr is not already in neighbors
+        add_child(neighbors, mote);
+        LOG_INFO("\nAdd mote in neighbors list\n");
+    }
     if(packet->flags == DIS){
         // Respond to DIS but not DIS+ACK
         LOG_INFO("DIS RECEIVED!\n");
@@ -148,6 +154,7 @@ void unreliable_wait_receive(const void *data, uint16_t len,
     printf("ADDR CMP: %d\n", linkaddr_cmp(packet->dst, &linkaddr_node_addr));
     printf("NULL CMP: %d\n", linkaddr_cmp(packet->dst, &linkaddr_null));
     if(!linkaddr_cmp(packet->dst, &linkaddr_node_addr) && !linkaddr_cmp(packet->dst, &linkaddr_null)){
+        // redistribute to parent if no child, or to child if have one that is the correct one else (if no parent and no child corresponding)
         LOG_INFO("DISCARD\n");
         return;
     }

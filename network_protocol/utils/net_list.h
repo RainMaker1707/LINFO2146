@@ -188,4 +188,16 @@ void process_neighbors_last_time(list_t* list){
     printf("Checking neighbor is done\n");
 
 }
+bool list_contains_src(list_t* list, linkaddr_t* src){
+    if(list->head != NULL){
+        list->current = list->head;
+        while(1){
+            if(linkaddr_cmp(list->current->mote->adress, src)) return true;
+            if(list->current == list->tail) break;
+            list->current = list->current->next;
+        }
+    }
+    return false;
+}
+
 
