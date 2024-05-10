@@ -26,7 +26,7 @@ list_t* childs = NULL;
 mote_t* parent = NULL;
 list_t* neighbors = NULL;
 
-static uint8_t buffer[PACKET_SIZE];
+static uint8_t buffer[PACKET_SIZE];      
 
 
 typedef void (*fct_ptr)(packet_t* packet);
@@ -35,10 +35,9 @@ fct_ptr node_callback;
 
 bool accept_childs_config = false; // By default mote doesn't accept child
 
-// TODO: Wait for DIS+ACK responses
-// TODO: Add DIS+ACK responder motes in the neighbor_list
-// TODO: Add an ALIVE system to remove node when not heard from a certain time threshold
 
+
+// TODO: Add an ALIVE system to remove node when not heard from a certain time threshold
 // TODO: Unicast
 
 // TODO: Broadcast to all
@@ -54,14 +53,18 @@ bool accept_childs_config = false; // By default mote doesn't accept child
 // ####################### API ############################
 
 
-void unicast_unreliable_send(uint8_t* buffer){
-    printf("UNICAST: %s\n", buffer);
+void unicast_unreliable_send(uint8_t* buffer, linkaddr_t* dst){
+    printf("UNICAST\n");
+    memcpy(nullnet_buf, buffer, PACKET_SIZE);  // Use nullnet_buf directly
+    LOG_INFO("BUFFER PAYLOAD: %s\n", decode((char*)buffer)->payload);
+    LOG_INFO("Broadcast packet %s\n", decode((char*)nullnet_buf)->payload); // Verify using nullnet_buf
+    NETSTACK_NETWORK.output(dst);
 }
 
 
 void broadcast_unreliable_send(uint8_t* buffer){
     // TODO: if childs == NULL send to NULLNET(NULL) else send unicast to every child
-    //uint8_t *encoded_data = (uint8_t*)encode(packet);
+    printf("BROADCAST\n");
     memcpy(nullnet_buf, buffer, PACKET_SIZE);  // Use nullnet_buf directly
     LOG_INFO("BUFFER PAYLOAD: %s\n", decode((char*)buffer)->payload);
     LOG_INFO("Broadcast packet %s\n", decode((char*)nullnet_buf)->payload); // Verify using nullnet_buf
@@ -70,7 +73,7 @@ void broadcast_unreliable_send(uint8_t* buffer){
 
 
 void multicast_unreliable_send(uint8_t* buffer){
-    printf("MULTICAST: %s\n", buffer);
+    printf("NOT IMPLEMENTED MULTICAST: %s\n", decode((char*)buffer)->payload);
 }
 
 
@@ -87,7 +90,7 @@ void unreliable_send(packet_t* packet, int mode){
     uint8_t* buffer = (uint8_t*) encode(packet);
     switch(mode){
         case UNICAST: 
-            unicast_unreliable_send(buffer);
+            unicast_unreliable_send(buffer, packet->dst);
             break;
         case BROADCAST: 
             broadcast_unreliable_send(buffer);
@@ -98,6 +101,35 @@ void unreliable_send(packet_t* packet, int mode){
         default:
             printf("\033[33mMode not compatible %d\033[0m\n", mode);
             exit(1);
+    }
+}
+
+
+void receive_dis(packet_t* packet, const linkaddr_t* src){
+    mote_t* mote = create_mote(0, packet->src, 10);
+    // TODO check if addr is not already in neighbors
+    add_child(neighbors, mote);
+    LOG_INFO("Add mote in neighbors list\n");
+    if(packet->flags == DIS){
+        // Respond to DIS but not DIS+ACK
+        LOG_INFO("DIS RECEIVED!\n");
+        packet_t* packet = create_packet(DIS+ACK, 1, (const linkaddr_t*)&linkaddr_node_addr, src, "DIS+ACK");
+        unreliable_send(packet, UNICAST);
+        free(packet);
+    }else LOG_INFO("DIS+ACK received!\n");
+
+    // TEST print mote lsit
+    if(neighbors->head != NULL){
+        neighbors->current = neighbors->head;
+        while(neighbors->current != neighbors->tail){
+            LOG_INFO("NEIGHBORS: ");
+            LOG_INFO_LLADDR(neighbors->current->mote->adress);
+            LOG_INFO("\n");
+            neighbors->current = neighbors->current->next;
+        }
+        LOG_INFO("NEIGHBORS: ");
+        LOG_INFO_LLADDR(neighbors->tail->mote->adress);
+        LOG_INFO("\n");
     }
 }
 
@@ -117,6 +149,20 @@ void unreliable_wait_receive(const void *data, uint16_t len,
     LOG_INFO("Received %s from ", packet->payload);
     LOG_INFO_LLADDR(src);
     LOG_INFO_("\n");
+    
+    switch(packet->flags){
+        case DIS:
+            receive_dis(packet, src);
+            break;
+        case DIS+ACK:
+            receive_dis(packet, src);
+            break;
+        case UDP:
+                break;
+        default:
+            LOG_INFO("No flags recognized %d\n", packet->flags);
+            break;
+    }
     node_callback(packet);
 }
 
@@ -161,7 +207,7 @@ bool attach_to_tree(){
 
 void discover_neighbor(){
     // Send DIS
-    packet_t* packet = create_packet(DIS, 0, "aaaaaaaaaaaaaaaaa", NULL, "DISCOVER!");
+    packet_t* packet = create_packet(DIS, 0, (const linkaddr_t*)&linkaddr_node_addr, NULL, "DISCOVER!");
     unreliable_send(packet, BROADCAST);
     free(packet);
 }
