@@ -157,29 +157,36 @@ void process_neighbors_last_time(list_t* list){
         printf("\033[33mError in process_neighbors_last_time(): param list can't be NULL\033[0m\n");
         exit(1);
     }
-    
-    node_t* current = list->head;
-     while(current != list->tail){
-        printf("current time is  TIME: %ld and last time seen is %ld\n", (long)clock_time(),(long)current->mote->last_time_heard);
-        if(clock_time() - current->mote->last_time_heard > 10*CLOCK_SECOND){
-            printf("difference is older than 10 seconds\n");
+    long alive_difference = 20 * CLOCK_SECOND;
 
-            //TODO remove from the list
+    list->current = list->head;
+    if(list->head == list->tail){
+        printf("time difference is %ld\n", (long) (clock_time() - list->current->mote->last_time_heard));
+        printf("alive difference is %ld\n", alive_difference);
+        if(clock_time() - list->current->mote->last_time_heard > alive_difference){
+            free(list->current->mote);
+            free(list->current);
+            list->head = NULL;
+            list->tail = NULL;
+            list->current = NULL;
+            printf("removed neighbor from list\n");
+            return;
         }
-        current = current->next;
     }
-
-    //check last elem  of the list
-    //TODO improve
-    printf("current time is  TIME: %ld and last time seen is %ld\n", (long)clock_time(),(long)current->mote->last_time_heard);
     
-    if(clock_time() - current->mote->last_time_heard > 10*CLOCK_SECOND){
-        
-            printf("difference is older than 10 seconds\n");
-
-            //TODO remove from the list
+    while(list->current != list->tail){
+        printf("Checking neighbor while loop\n");
+        if(clock_time() - list->current->mote->last_time_heard > alive_difference){
+            free(list->current->mote);
+            free(list->current);
+            list->head = NULL;
+            list->tail = NULL;
+            list->current = NULL;
+            return;
         }
-    
+        list->current = list->current->next;
+    }
+    printf("Checking neighbor is done\n");
 
 }
 
