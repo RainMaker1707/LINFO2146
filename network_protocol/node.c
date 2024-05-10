@@ -18,21 +18,8 @@ AUTOSTART_PROCESSES(&sender_process);
 
 
 
-void input_callback(const void *data, uint16_t len,
-  const linkaddr_t *src, const linkaddr_t *dest)
-{
-  LOG_INFO("RECEIVED PACKET of len %d!\n", len);
-  char encoded[PACKET_SIZE];
-  memcpy(&encoded, data, PACKET_SIZE);
-
-  packet_t* packet = decode((char*)&encoded);
-  if(packet == NULL) {
-    LOG_INFO("Error decoding\n");
-    return;
-  }
-  LOG_INFO("Received %s from ", packet->payload);
-  LOG_INFO_LLADDR(src);
-  LOG_INFO_("\n");
+void callback(packet_t* packet){
+    LOG_INFO("NODE CALLBACK\n");
 }
 
 
@@ -41,9 +28,7 @@ PROCESS_THREAD(sender_process, ev, data)
     static struct etimer periodic_timer;
     PROCESS_BEGIN();
 
-    nullnet_set_input_callback(input_callback);
-    
-    setup_node();
+    setup_node(callback);
 
     etimer_set(&periodic_timer, SEND_INTERVAL);
 

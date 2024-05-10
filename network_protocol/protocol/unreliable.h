@@ -29,6 +29,10 @@ list_t* neighbors = NULL;
 static uint8_t buffer[PACKET_SIZE];
 
 
+typedef void (*fct_ptr)(packet_t* packet);
+
+fct_ptr node_callback;
+
 bool accept_childs_config = false; // By default mote doesn't accept child
 
 // TODO: Wait for DIS+ACK responses
@@ -48,6 +52,7 @@ bool accept_childs_config = false; // By default mote doesn't accept child
 
 
 // ####################### API ############################
+
 
 void unicast_unreliable_send(uint8_t* buffer){
     printf("UNICAST: %s\n", buffer);
@@ -97,8 +102,22 @@ void unreliable_send(packet_t* packet, int mode){
 }
 
 
-void unreliable_wait_receive(char * buffer, void* callback){
+void unreliable_wait_receive(const void *data, uint16_t len,
+  const linkaddr_t *src, const linkaddr_t *dest)
+{
+    LOG_INFO("RECEIVED PACKET of len %d!\n", len);
+    char encoded[PACKET_SIZE];
+    memcpy(&encoded, data, PACKET_SIZE);
 
+    packet_t* packet = decode((char*)&encoded);
+    if(packet == NULL) {
+        LOG_INFO("Error decoding\n");
+        return;
+    }
+    LOG_INFO("Received %s from ", packet->payload);
+    LOG_INFO_LLADDR(src);
+    LOG_INFO_("\n");
+    node_callback(packet);
 }
 
 
@@ -156,7 +175,7 @@ void discover_neighbor(){
     @Param: accept_childs: if true then the mote will accept child when receive a PRT packet
                             by default set as false
 */
-void setup_custom_node(bool accept_child){
+void setup_custom_node(bool accept_child, void* callback){
     // NULLNET config
     nullnet_buf = buffer;
     nullnet_len = PACKET_SIZE;
@@ -166,13 +185,15 @@ void setup_custom_node(bool accept_child){
     // DIS SEND
     discover_neighbor();
     accept_childs_config = accept_child; // To know if the node accept childs
-    printf("Node setup ok\n");
+    node_callback = (fct_ptr)callback;
+    nullnet_set_input_callback(unreliable_wait_receive);
+    LOG_INFO("Node setup ok\n");
 }
 
 
-void setup_node() {
+void setup_node(void* callback) {
     // setup NULLNET
-    setup_custom_node(false);
+    setup_custom_node(false, callback);
 }
 
 
