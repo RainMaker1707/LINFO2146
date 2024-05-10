@@ -164,6 +164,10 @@ void unreliable_wait_receive(const void *data, uint16_t len,
             break;
         case UDP:
                 break;
+		case FIN:
+            //used for the alive system
+            neighbor_is_alive(neighbors, src);
+			break;
         default:
             LOG_INFO("No flags recognized %d\n", packet->flags);
             break;
@@ -252,4 +256,10 @@ void end_net(){
     free_list(neighbors);
     if(accept_childs_config) free(childs);
     free(parent);
+}
+
+
+void check_neighbors_last_time_heard(){
+    LOG_INFO("CHECK NEIGHBORS\n");
+    process_neighbors_last_time(neighbors);
 }

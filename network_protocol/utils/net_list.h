@@ -91,3 +91,95 @@ mote_t* create_mote(int rank, const linkaddr_t* adress, int signal_strenght){
     mote->last_time_heard = clock_time();
     return mote;
 }
+
+
+node_t* find_neighbor_in_list(list_t* list, const linkaddr_t* address){
+    node_t* current = list->head;
+    while(current != list->tail){
+        if(linkaddr_cmp(current->mote->adress, address)){
+            return current;
+        }
+        current = current->next;
+    }
+
+    if(linkaddr_cmp(current->mote->adress, address)){
+        return current;
+    }
+    return NULL;
+}
+
+void set_mote_last_time(list_t* list, node_t* node){
+    list->current = list->head;
+    while(list->current != list->tail){
+        if(list->current == node){
+            list->current->mote->last_time_heard = clock_time();
+            return;
+        }
+        list->current = list->current->next;
+    }
+    if(list->current == node){
+        list->current->mote->last_time_heard = clock_time();
+        return;
+    }
+}
+
+
+/*
+  set the last time heard parameter of the neighbor to the current cpu time
+*/
+void neighbor_is_alive(list_t* list, const linkaddr_t* neigh_address){
+    if(list == NULL){
+        printf("\033[33mError in neighbor_is_alive(): param list can't be NULL\033[0m\n");
+        exit(1);
+    }
+    if(neigh_address == NULL){
+        printf("\033[33mError in neighbor_is_alive(): param neigh_address can't be NULL\033[0m\n");
+        exit(1);
+    }
+    node_t* neighbor = find_neighbor_in_list(list, neigh_address);
+    if(neighbor == NULL){
+        //TODO maybe do something if not in the list like send a DIS ?
+        printf("Neighbor is not in the list\n");
+        return;
+    }
+    printf("setting time for neighbor\n");
+    set_mote_last_time(list, neighbor);
+}
+
+
+
+/*
+ function that loops through the list of neighbors and check if the last time heard is too old
+
+*/
+void process_neighbors_last_time(list_t* list){
+    if(list == NULL){
+        printf("\033[33mError in process_neighbors_last_time(): param list can't be NULL\033[0m\n");
+        exit(1);
+    }
+    
+    node_t* current = list->head;
+     while(current != list->tail){
+        printf("current time is  TIME: %ld and last time seen is %ld\n", (long)clock_time(),(long)current->mote->last_time_heard);
+        if(clock_time() - current->mote->last_time_heard > 10*CLOCK_SECOND){
+            printf("difference is older than 10 seconds\n");
+
+            //TODO remove from the list
+        }
+        current = current->next;
+    }
+
+    //check last elem  of the list
+    //TODO improve
+    printf("current time is  TIME: %ld and last time seen is %ld\n", (long)clock_time(),(long)current->mote->last_time_heard);
+    
+    if(clock_time() - current->mote->last_time_heard > 10*CLOCK_SECOND){
+        
+            printf("difference is older than 10 seconds\n");
+
+            //TODO remove from the list
+        }
+    
+
+}
+
