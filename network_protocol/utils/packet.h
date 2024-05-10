@@ -2,8 +2,10 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include "net/netstack.h" // import for linkaddr_t
 #include <string.h>
+
+
+#include "net/netstack.h" // import for linkaddr_t
 
 
 #include "flags.h" // Contain constant for flags. Add them to have multiple flags (not all combination works)
@@ -40,7 +42,6 @@ uint8_t* retrieve_flags(packet_t* packet);
 int get_hex_val(char c);
 char* linkaddr_to_char(const linkaddr_t* addr);
 linkaddr_t* char_to_linkaddr(char* str);
-
 
 // ######################### API ########################################
 
