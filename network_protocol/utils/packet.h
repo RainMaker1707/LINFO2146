@@ -66,7 +66,8 @@ packet_t* create_packet(uint8_t flags, uint8_t packet_number, const linkaddr_t* 
     packet->flags = flags;
     packet->packet_number = packet_number;
     packet->src = (linkaddr_t*)source_ip;
-    packet->dst = (linkaddr_t*)dest_ip;
+    if(dest_ip == NULL) packet->dst = (linkaddr_t*)&linkaddr_null;
+    else packet->dst = (linkaddr_t*)dest_ip;
     packet->checksum = compute_checksum(packet); // TODO, for now 1byte at 1
     packet->payload = payload;
     return packet;

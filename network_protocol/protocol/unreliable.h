@@ -57,7 +57,7 @@ void unicast_unreliable_send(uint8_t* buffer, linkaddr_t* dst){
     printf("UNICAST\n");
     memcpy(nullnet_buf, buffer, PACKET_SIZE);  // Use nullnet_buf directly
     LOG_INFO("BUFFER PAYLOAD: %s\n", decode((char*)buffer)->payload);
-    LOG_INFO("Broadcast packet %s\n", decode((char*)nullnet_buf)->payload); // Verify using nullnet_buf
+    LOG_INFO("Unicast packet %s\n", decode((char*)nullnet_buf)->payload); // Verify using nullnet_buf
     NETSTACK_NETWORK.output(dst);
 }
 
@@ -102,6 +102,7 @@ void unreliable_send(packet_t* packet, int mode){
             printf("\033[33mMode not compatible %d\033[0m\n", mode);
             exit(1);
     }
+    free(buffer);
 }
 
 
@@ -137,13 +138,17 @@ void receive_dis(packet_t* packet, const linkaddr_t* src){
 void unreliable_wait_receive(const void *data, uint16_t len,
   const linkaddr_t *src, const linkaddr_t *dest)
 {
-    LOG_INFO("RECEIVED PACKET of len %d!\n", len);
     char encoded[PACKET_SIZE];
     memcpy(&encoded, data, PACKET_SIZE);
-
     packet_t* packet = decode((char*)&encoded);
     if(packet == NULL) {
         LOG_INFO("Error decoding\n");
+        return;
+    }
+    printf("ADDR CMP: %d\n", linkaddr_cmp(packet->dst, &linkaddr_node_addr));
+    printf("NULL CMP: %d\n", linkaddr_cmp(packet->dst, &linkaddr_null));
+    if(!linkaddr_cmp(packet->dst, &linkaddr_node_addr) && !linkaddr_cmp(packet->dst, &linkaddr_null)){
+        LOG_INFO("DISCARD\n");
         return;
     }
     LOG_INFO("Received %s from ", packet->payload);
