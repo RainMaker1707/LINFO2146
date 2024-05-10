@@ -29,15 +29,14 @@ PROCESS_THREAD(sender_process, ev, data)
     PROCESS_BEGIN();
     
     
-    setup_node(callback);
+    setup_custom_node(true, callback);
     check_neighbors_last_time_heard();
     etimer_set(&periodic_timer, SEND_INTERVAL);
 
     while(1) {
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
         check_neighbors_last_time_heard();
-        //packet_t *packet = create_packet(UDP, 0, linkaddr_node_addr, "aaaaaaaaaaaaaaaa", "Hello net!");
-        //unreliable_send(packet, BROADCAST);
+        LOG_INFO("Inner process");
         etimer_reset(&periodic_timer);
     }
     PROCESS_END();
