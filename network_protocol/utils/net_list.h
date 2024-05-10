@@ -1,10 +1,11 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <time.h>
+#include "sys/clock.h"
+#include "net/netstack.h"
 
 typedef struct mote{
     int rank;
-    char* adress;
+    const linkaddr_t* adress;
     int signal_strenght;
     unsigned long long last_time_heard;
 } mote_t;
@@ -34,7 +35,7 @@ void free_list(list_t* list);
 
 /*
 */
-mote_t* create_mote(int rank, char* adress, int signal_strenght);
+mote_t* create_mote(int rank, const linkaddr_t* adress, int signal_strenght);
 
 
 list_t* create_list(){
@@ -82,11 +83,11 @@ void free_list(list_t* list){
     free(list);
 }
 
-mote_t* create_mote(int rank, char* adress, int signal_strenght){
+mote_t* create_mote(int rank, const linkaddr_t* adress, int signal_strenght){
     mote_t* mote = malloc(sizeof(mote_t));
     mote->rank = rank;
     mote->adress = adress;
     mote->signal_strenght = signal_strenght;
-    mote->last_time_heard = clock();
+    mote->last_time_heard = clock_time();
     return mote;
 }

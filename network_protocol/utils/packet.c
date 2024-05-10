@@ -1,49 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <string.h>
-
-
-#include "net/netstack.h" // import for linkaddr_t
-
-
-#include "flags.h" // Contain constant for flags. Add them to have multiple flags (not all combination works)
-
-#define VERSION 0x01
-#define PACKET_SIZE 32
-
-typedef struct packet {
-    uint8_t version;
-    uint8_t packet_number; // just for reliability (like TCP)
-    uint8_t flags; // 8 bits (as TCP) if one bit is set it is a certain flag for example 10000000 == SYN packet, 01000000 == ACK packet ...
-    uint8_t checksum;
-    linkaddr_t *src; // Source IP 8 bytes
-    linkaddr_t *dst; // Destination IP 8 bytes
-    char *payload; // Payload converted in 96 bits -> 12 bytes
-} packet_t;
-
-
-typedef struct reader{
-    bool checker;
-    char* payload;
-} reader_t;
-
-
-// ########## Function definition for easier use ########################""
-
-packet_t* create_packet(uint8_t flags, uint8_t packet_number, const linkaddr_t* source_ip, const linkaddr_t* dest_ip, char* payload);
-bool check_packet(packet_t* packet);
-uint8_t compute_checksum(packet_t* packet); 
-reader_t* check_read_packet(packet_t* packet);
-char* encode(packet_t* packet);
-packet_t* decode(char* buffer);
-
-void free_packet(packet_t* packet);
-uint8_t* retrieve_flags(packet_t* packet);
-int get_hex_val(char c);
-char* linkaddr_to_char(const linkaddr_t* addr);
-linkaddr_t* char_to_linkaddr(char* str);
+#include "packet.h"
 
 // ######################### API ########################################
 
@@ -60,13 +15,13 @@ linkaddr_t* char_to_linkaddr(char* str);
     @Param: payload
     @Returns: packet_t containing all the information OR reject the packet and return NULL
 */
-packet_t* create_packet(uint8_t flags, uint8_t packet_number, const linkaddr_t* source_ip, const linkaddr_t* dest_ip, char* payload){
+packet_t* create_packet(uint8_t flags, uint8_t packet_number, char* source_ip, char* dest_ip, char* payload){
     packet_t* packet = malloc(sizeof(packet_t));
     packet->version = VERSION;
     packet->flags = flags;
     packet->packet_number = packet_number;
-    packet->src = (linkaddr_t*)source_ip;
-    packet->dst = (linkaddr_t*)dest_ip;
+    packet->src = source_ip;
+    packet->dst = dest_ip;
     packet->checksum = compute_checksum(packet); // TODO, for now 1byte at 1
     packet->payload = payload;
     return packet;
@@ -125,12 +80,12 @@ char* encode(packet_t* packet){
     buffer[1] = packet->flags;
     buffer[2] = packet->packet_number;
     buffer[3] = packet->checksum;
-    for(int i = 0; i<8; i++){
-        buffer[4+i] = ((char*)packet->src)[i];
-        if(packet->dst != NULL) buffer[12+i] = ((char*)packet->dst)[i];
+    for(int i = 0; i<16; i++){
+        buffer[4+i] = packet->src[i];
+        if(packet->dst != NULL) buffer[20+i] = packet->dst[i];
     }
     for(int i = 0; i<12; i++){
-        buffer[20+i] = packet->payload[i];
+        buffer[36+i] = packet->payload[i];
     }
     return buffer;
 }
@@ -147,11 +102,13 @@ packet_t* decode(char* buffer){
     packet->checksum = buffer[3];
     packet->src = malloc(16*sizeof(char));
     packet->dst = malloc(16*sizeof(char));
-    memcpy(packet->src, (const linkaddr_t*)&(buffer[4]), 8);
-    memcpy(packet->dst, (const linkaddr_t*)&(buffer[12]), 8);
+    for(int i = 0; i<16; i++){
+        packet->src[i] = buffer[4+i];
+        packet->dst[i] = buffer[20+i];
+    }
     packet->payload = malloc(12*sizeof(char));
     for(int i = 0; i<12; i++){
-        packet->payload[i] = buffer[20+i];
+        packet->payload[i] = buffer[36+i];
     }
     return packet;
 }
@@ -161,6 +118,8 @@ packet_t* decode(char* buffer){
     As the packet contains malloced char* you need to free it from this function
 */
 void free_packet(packet_t* packet){
+    free(packet->src);
+    free(packet->dst);
     free(packet->payload);
     free(packet);
 }
