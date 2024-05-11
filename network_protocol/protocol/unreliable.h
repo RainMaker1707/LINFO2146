@@ -37,7 +37,6 @@ bool accept_childs_config = false; // By default mote doesn't accept child
 
 
 
-// TODO: Add an ALIVE system to remove node when not heard from a certain time threshold
 // TODO: Unicast
 
 // TODO: Broadcast to all
@@ -50,7 +49,9 @@ bool accept_childs_config = false; // By default mote doesn't accept child
 
 
 
-// ####################### API ############################
+
+
+// ##################### SENDER ########################
 
 
 void unicast_unreliable_send(uint8_t* buffer, linkaddr_t* dst){
@@ -107,6 +108,42 @@ void unreliable_send(packet_t* packet, int mode){
 
 
 
+
+
+
+
+
+// ####################### API ############################
+
+
+mote_t* search_max_under_x(list_t* neighbors, int x){
+    neighbors->current = neighbors->head->next;
+    int max = neighbors->head->mote->signal_strenght;
+    mote_t* mote = neighbors->head->mote;
+    while(neighbors->current != neighbors->head){
+        if(neighbors->current->mote->signal_strenght > max && neighbors->current->mote->signal_strenght < x){
+            max = neighbors->current->mote->signal_strenght;
+            mote = neighbors->current->mote;
+        }
+        neighbors->current = neighbors->current->next;
+    }
+    if(mote->signal_strenght > x) return NULL;
+    return mote;
+}
+
+
+
+
+
+// ################ DISCOVER API ##########################
+
+void discover_neighbor(){
+    // Send DIS
+    packet_t* packet = create_packet(DIS, 0, (const linkaddr_t*)&linkaddr_node_addr, NULL, "DISCOVER!");
+    unreliable_send(packet, BROADCAST);
+    free(packet);
+}
+
 void receive_dis(packet_t* packet, const linkaddr_t* src){
     
     LOG_INFO("CONTAINS: %d    :", list_contains_src(neighbors, (linkaddr_t*)src));
@@ -141,6 +178,98 @@ void receive_dis(packet_t* packet, const linkaddr_t* src){
 }
 
 
+
+
+
+
+// ############### ALIVE API ################
+
+node_t* find_neighbor_in_list(list_t* list, const linkaddr_t* address){
+    if(list == NULL || list->head == NULL) return NULL; 
+    list->current = list->head;
+    while(1){
+        if(linkaddr_cmp(list->current->mote->adress, address)) return list->current;
+        if(list->current == list->tail) return NULL;
+        list->current =list->current->next;
+    }
+}
+
+
+/*
+  set the last time heard parameter of the neighbor to the current cpu time
+*/
+void neighbor_is_alive(list_t* list, const linkaddr_t* neigh_address){
+    if(list == NULL || neigh_address == NULL) return;
+    node_t* neighbor = find_neighbor_in_list(list, neigh_address);
+    if(neighbor == NULL){
+        //TODO maybe do something if not in the list like send a DIS ?
+        printf("Neighbor is not in the list\n");
+        return;
+    }
+    printf("setting time for neighbor\n");
+    neighbor->mote->last_time_heard = clock_time();
+}
+
+
+
+/*
+ function that loops through the list of neighbors and check if the last time heard is too old
+
+*/
+void process_neighbors_last_time(list_t* list){
+    if(list == NULL||list->head == NULL) return;
+    long alive_difference = 20 * CLOCK_SECOND;
+
+    list->current = list->head;
+    if(list->head == list->tail){
+        printf("time difference is %ld\n", (long) (clock_time() - list->current->mote->last_time_heard));
+        printf("alive difference is %ld\n", alive_difference);
+        if(clock_time() - list->current->mote->last_time_heard > alive_difference){
+            free(list->current->mote);
+            free(list->current);
+            list->head = NULL;
+            list->tail = NULL;
+            list->current = NULL;
+            printf("removed neighbor from list\n");
+            return;
+        }
+    }
+    node_t* tmp = list->current;
+    while(list->current != list->tail){
+        printf("Checking neighbor while loop\n");
+        if(clock_time() - list->current->mote->last_time_heard > alive_difference){
+            tmp->next = list->current->next;
+            free(list->current->mote);
+            free(list->current);
+            return;
+        }
+        tmp = list->current;
+        list->current = list->current->next;
+    }
+    printf("Checking neighbor is done\n");
+}
+
+void check_neighbors_last_time_heard(){
+    LOG_INFO("CHECK NEIGHBORS\n");
+    process_neighbors_last_time(neighbors);
+}
+
+void heartbeat(){
+        packet_t *packet = create_packet(DIO, 0, &linkaddr_node_addr, NULL, "alive");
+        unreliable_send(packet, BROADCAST);
+        free_packet(packet);
+}
+
+
+
+
+
+
+
+
+
+// #################### RECEIVER #######################
+
 void unreliable_wait_receive(const void *data, uint16_t len,
   const linkaddr_t *src, const linkaddr_t *dest)
 {
@@ -171,7 +300,7 @@ void unreliable_wait_receive(const void *data, uint16_t len,
             break;
         case UDP:
                 break;
-		case FIN:
+		case DIO:
             //used for the alive system
             neighbor_is_alive(neighbors, src);
 			break;
@@ -183,51 +312,11 @@ void unreliable_wait_receive(const void *data, uint16_t len,
 }
 
 
-mote_t* search_max_under_x(list_t* neighbors, int x){
-    neighbors->current = neighbors->head->next;
-    int max = neighbors->head->mote->signal_strenght;
-    mote_t* mote = neighbors->head->mote;
-    while(neighbors->current != neighbors->head){
-        if(neighbors->current->mote->signal_strenght > max && neighbors->current->mote->signal_strenght < x){
-            max = neighbors->current->mote->signal_strenght;
-            mote = neighbors->current->mote;
-        }
-        neighbors->current = neighbors->current->next;
-    }
-    if(mote->signal_strenght > x) {
-        printf("\033[1;31mNo mote with signal strength under %d\nMote returned is not contrained\033[0m\n", x);
-    }
-    return mote;
-}
 
 
-bool attach_parent(mote_t* mote){
-    if(parent != NULL) { return false; }
-    parent = mote;
-    return true;
-}
 
 
-bool attach_to_tree(){
-    int old_max = 10000;
-    bool attached = false;
-    if(neighbors->head == NULL) return false;
-    while(!attached){
-        mote_t* mote = search_max_under_x(neighbors, old_max);
-        attached = attach_parent(mote);
-        if(!attached) old_max = mote->signal_strenght;
-    }
-    return attached;
-}
-
-
-void discover_neighbor(){
-    // Send DIS
-    packet_t* packet = create_packet(DIS, 0, (const linkaddr_t*)&linkaddr_node_addr, NULL, "DISCOVER!");
-    unreliable_send(packet, BROADCAST);
-    free(packet);
-}
-
+// ############################### SETUP API ###############################
 
 /*
     Broadcast DIS
@@ -263,10 +352,4 @@ void end_net(){
     free_list(neighbors);
     if(accept_childs_config) free(childs);
     free(parent);
-}
-
-
-void check_neighbors_last_time_heard(){
-    LOG_INFO("CHECK NEIGHBORS\n");
-    process_neighbors_last_time(neighbors);
 }

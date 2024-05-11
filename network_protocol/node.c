@@ -34,12 +34,10 @@ PROCESS_THREAD(sender_process, ev, data)
     
     
     setup_node(callback);
-    check_neighbors_last_time_heard();
     etimer_set(&periodic_timer, SEND_INTERVAL);
 
     while(1) {
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
-        check_neighbors_last_time_heard();
         LOG_INFO("Inner process");
         etimer_reset(&periodic_timer);
     }

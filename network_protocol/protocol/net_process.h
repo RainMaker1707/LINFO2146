@@ -26,10 +26,8 @@ PROCESS_THREAD(keep_alive_process, ev, data)
 
     while(1) {
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
-        
-        packet_t *packet = create_packet(FIN, 0, &linkaddr_node_addr, NULL, "alive");
-        unreliable_send(packet, BROADCAST);
-        free_packet(packet);
+        check_neighbors_last_time_heard();
+        heartbeat();
         etimer_reset(&periodic_timer);
     }
     PROCESS_END();
@@ -41,9 +39,7 @@ PROCESS_THREAD(dis_process, ev, data){
     PROCESS_BEGIN();
     etimer_set(&period, DIS_INTERVAL);
     while(1){
-        packet_t *packet = create_packet(DIS, 0, &linkaddr_node_addr, NULL, "DISCOVER");
-        unreliable_send(packet, BROADCAST);
-        free_packet(packet);
+        discover_neighbor();
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&period));
     }
     PROCESS_END();
