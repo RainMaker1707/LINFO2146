@@ -232,7 +232,7 @@ void receive_dis(packet_t* packet, const linkaddr_t* src){
         unreliable_send(packet, UNICAST);
         free(packet);
     }else LOG_INFO("DIS+ACK received!\n");
-    send_prt(src);
+    if(need_parent_config && parent == NULL) send_prt(src);
 }
 
 
