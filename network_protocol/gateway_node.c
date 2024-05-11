@@ -29,7 +29,7 @@ PROCESS_THREAD(sender_process, ev, data)
     PROCESS_BEGIN();
     
     
-    setup_gateway(true, false, callback);
+    setup_gateway(GATEWAY, true, false, callback);
     etimer_set(&periodic_timer, SEND_INTERVAL);
 
     while(1) {

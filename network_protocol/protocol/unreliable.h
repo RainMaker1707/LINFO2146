@@ -21,6 +21,12 @@
 #define HEADER_LEN 4                // header is 4 bytes
 #define PACKET_PAYLOAD_MAX_LEN 12   // Payload is 12 bytes max
 
+#define ALIVE_MAX_INTERVAL 15
+
+#define GATEWAY 2
+#define SUBGATEWAY 1
+#define SENSOR 0
+
 
 list_t* childs = NULL;
 mote_t* parent = NULL;
@@ -35,6 +41,7 @@ fct_ptr node_callback;
 
 bool accept_childs_config = false; // By default mote doesn't accept child
 bool need_parent_config = true; // By default mote accept parent;
+uint8_t node_rank = 2; // By default mote is a sensor (node)
 
 
 
@@ -56,19 +63,21 @@ bool need_parent_config = true; // By default mote accept parent;
 
 
 void unicast_unreliable_send(uint8_t* buffer, linkaddr_t* dst){
-    printf("UNICAST\n");
     memcpy(nullnet_buf, buffer, PACKET_SIZE);  // Use nullnet_buf directly
-    LOG_INFO("BUFFER PAYLOAD: %s\n", decode((char*)buffer)->payload);
     LOG_INFO("Unicast packet %s\n", decode((char*)nullnet_buf)->payload); // Verify using nullnet_buf
-    NETSTACK_NETWORK.output(dst);
+    if(!accept_childs_config && parent != NULL) NETSTACK_NETWORK.output(parent->adress);
+    else if(accept_childs_config && list_contains_src(childs, dst)) NETSTACK_NETWORK.output(dst);
+    else if(list_contains_src(neighbors, dst)) NETSTACK_NETWORK.output(dst);
+    else {
+        LOG_INFO("Can't unicast packet, broadcast it\n");
+        NETSTACK_NETWORK.output(NULL);
+    }
 }
 
 
 void broadcast_unreliable_send(uint8_t* buffer){
     // TODO: if childs == NULL send to NULLNET(NULL) else send unicast to every child
-    printf("BROADCAST\n");
     memcpy(nullnet_buf, buffer, PACKET_SIZE);  // Use nullnet_buf directly
-    LOG_INFO("BUFFER PAYLOAD: %s\n", decode((char*)buffer)->payload);
     LOG_INFO("Broadcast packet %s\n", decode((char*)nullnet_buf)->payload); // Verify using nullnet_buf
     NETSTACK_NETWORK.output(NULL);
 }
@@ -163,49 +172,33 @@ node_t* find_neighbor_in_list(list_t* list, const linkaddr_t* address){
 
 // ################## PRT API ################
 
-
-void send_prt_custom(const linkaddr_t* src, uint8_t flags){
-    packet_t* prt_packet = create_packet(flags, 0, (const linkaddr_t*)&linkaddr_node_addr, src, "ADOPT?");
-    unreliable_send(prt_packet, UNICAST);
-    free(prt_packet);
-    LOG_INFO("PRT sent\n");
-}
-
-void send_prt_ack(const linkaddr_t* src){
-    send_prt_custom(src, PRT+ACK);
-}
-
-void send_prt_nack(const linkaddr_t* src){
-    send_prt_custom(src, PRT+NACK);
-}
-
 void send_prt(const linkaddr_t* src){
     if(need_parent_config){
-        send_prt_custom(src, PRT);
+        packet_t* prt_packet = create_packet(PRT, node_rank, (const linkaddr_t*)&linkaddr_node_addr, src, "PARENT");
+        unreliable_send(prt_packet, UNICAST);
+        free(prt_packet);
+        LOG_INFO("PRT sent ");
+        LOG_INFO_LLADDR(src);
+        LOG_INFO("\n");
     }
 }
 
 void prt_received(packet_t* packet, const linkaddr_t* src){
-    if(!accept_childs_config || (parent == NULL && need_parent_config)) {
-        send_prt_nack(src);
-        return;
-    }
     add_child(childs, find_neighbor_in_list(neighbors, src)->mote);
-    send_prt_ack(src);
     LOG_INFO("CHILD accepted -> ");
     LOG_INFO_LLADDR(src);
     LOG_INFO("\n");
 }
 
 
-void prt_ack_receive(packet_t* packet, const linkaddr_t* src){
-    if(parent != NULL) return;  // Parent is already setup
-    parent = find_neighbor_in_list(neighbors, src)->mote;
-    LOG_INFO("PARENT setup as -> ");
-    LOG_INFO_LLADDR(src);
-    LOG_INFO("\n");
+void attach_parent(packet_t* packet, const linkaddr_t* src){
+    // TODO: check signal strength
+    if(need_parent_config && parent == NULL && packet->packet_number == node_rank+1) {
+        send_prt(packet->src);
+        if(find_neighbor_in_list(neighbors, packet->src) == NULL) LOG_INFO("PARENT NOT FIND IN NEIGHBOR\n");
+        parent = find_neighbor_in_list(neighbors, packet->src)->mote;
+    }
 }
-
 
 
 
@@ -214,13 +207,13 @@ void prt_ack_receive(packet_t* packet, const linkaddr_t* src){
 
 void discover_neighbor(){
     // Send DIS
-    packet_t* packet = create_packet(DIS, 0, (const linkaddr_t*)&linkaddr_node_addr, NULL, "DISCOVER!");
+    packet_t* packet = create_packet(DIS, node_rank, (const linkaddr_t*)&linkaddr_node_addr, NULL, "DISCOVER!");
     unreliable_send(packet, BROADCAST);
     free(packet);
 }
 
 void receive_dis(packet_t* packet, const linkaddr_t* src){
-    if(!list_contains_src(neighbors, (linkaddr_t*)src)) {
+    if(!list_contains_src(neighbors, (linkaddr_t*)packet->src)) {
         mote_t* mote = create_mote(0, packet->src, 10);
         add_child(neighbors, mote);
         LOG_INFO("Add mote in neighbors list\n");
@@ -228,11 +221,10 @@ void receive_dis(packet_t* packet, const linkaddr_t* src){
     if(packet->flags == DIS){
         // Respond to DIS but not DIS+ACK
         LOG_INFO("DIS RECEIVED!\n");
-        packet_t* packet = create_packet(DIS+ACK, 1, (const linkaddr_t*)&linkaddr_node_addr, src, "DIS+ACK");
+        packet_t* packet = create_packet(DIS+ACK, node_rank, (const linkaddr_t*)&linkaddr_node_addr, src, "DIS+ACK");
         unreliable_send(packet, UNICAST);
         free(packet);
-    }else LOG_INFO("DIS+ACK received!\n");
-    if(need_parent_config && parent == NULL) send_prt(src);
+    }else if(packet->flags == DIS+ACK) LOG_INFO("DIS+ACK received!\n");
 }
 
 
@@ -265,12 +257,10 @@ void neighbor_is_alive(list_t* list, const linkaddr_t* neigh_address){
 */
 void process_neighbors_last_time(list_t* list){
     if(list == NULL||list->head == NULL) return;
-    long alive_difference = 20 * CLOCK_SECOND;
+    long alive_difference = ALIVE_MAX_INTERVAL * CLOCK_SECOND;
 
     list->current = list->head;
     if(list->head == list->tail){
-        printf("time difference is %ld\n", (long) (clock_time() - list->current->mote->last_time_heard));
-        printf("alive difference is %ld\n", alive_difference);
         if(clock_time() - list->current->mote->last_time_heard > alive_difference){
             free(list->current->mote);
             free(list->current);
@@ -288,6 +278,7 @@ void process_neighbors_last_time(list_t* list){
             tmp->next = list->current->next;
             free(list->current->mote);
             free(list->current);
+            printf("removed neighbor from list\n");
             return;
         }
         tmp = list->current;
@@ -335,24 +326,20 @@ void unreliable_wait_receive(const void *data, uint16_t len,
     
     switch(packet->flags){
         case UDP:
-            // TODO: retransmit packets.
+            // GIVE PACKET TO USER (MOTE).
+            node_callback(packet);
             break;
-        case PRT:
+        case PRT:       // ASK FOR PARENTING
             LOG_INFO("PRT received");
             prt_received(packet, src);
             break;
-        case PRT+ACK:
-            LOG_INFO("PRT+ACK received");
-            prt_ack_receive(packet, src);
-            break;
-        case PRT+NACK:
-            LOG_INFO("PRT+NACK received");
-            break;
-        case DIO:
+        case DIO:       // ALIVE SYSTEM
             neighbor_is_alive(neighbors, src);
+            attach_parent(packet, src);
 			break;
         case DIS:
             receive_dis(packet, src);
+            attach_parent(packet, src);
             break;
         case DIS+ACK:
             receive_dis(packet, src);
@@ -361,7 +348,6 @@ void unreliable_wait_receive(const void *data, uint16_t len,
             LOG_INFO("No flags recognized %d\n", packet->flags);
             break;
     }
-    node_callback(packet);
     free(packet);
 }
 
@@ -380,7 +366,7 @@ void unreliable_wait_receive(const void *data, uint16_t len,
     @Param: accept_childs: if true then the mote will accept child when receive a PRT packet
                             by default set as false
 */
-void setup_gateway(bool accept_child, bool need_parent, void* callback){
+void setup_gateway(uint8_t rank, bool accept_child, bool need_parent, void* callback){
     // NULLNET config
     nullnet_buf = buffer;
     nullnet_len = PACKET_SIZE;
@@ -389,18 +375,19 @@ void setup_gateway(bool accept_child, bool need_parent, void* callback){
     neighbors = create_list();
     accept_childs_config = accept_child; // To know if node accept childs
     need_parent_config = need_parent;    // To know if node accept parent
+    node_rank = rank;
     node_callback = (fct_ptr)callback;
     nullnet_set_input_callback(unreliable_wait_receive);
     LOG_INFO("Node setup ok\n");
 }
 
-void setup_subgateway(bool accept_child, void* callback){
-    setup_gateway(accept_child, true, callback);
+void setup_subgateway(uint8_t rank, bool accept_child, void* callback){
+    setup_gateway(rank, accept_child, true, callback);
 }
 
 
-void setup_node(void* callback) {
-    setup_subgateway(false, callback);
+void setup_node(uint8_t rank, void* callback) {
+    setup_subgateway(rank, false, callback);
 }
 
 

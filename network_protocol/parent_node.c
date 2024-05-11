@@ -13,6 +13,8 @@
 
 #define SEND_INTERVAL (35 * CLOCK_SECOND)
 
+# define RANK 1
+
 PROCESS(sender_process, "Node example alive");
 AUTOSTART_PROCESSES(&sender_process,&keep_alive_process, &dis_process, &keep_alive_process);
 
@@ -29,12 +31,14 @@ PROCESS_THREAD(sender_process, ev, data)
     PROCESS_BEGIN();
     
     
-    setup_subgateway(true, callback);
+    setup_subgateway(SUBGATEWAY, true, callback);
     etimer_set(&periodic_timer, SEND_INTERVAL);
 
     while(1) {
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
-        LOG_INFO("PARENT Inner process");
+        LOG_INFO("SG PARENT: ");
+        LOG_INFO_LLADDR(parent->adress);
+        LOG_INFO("\n");
         etimer_reset(&periodic_timer);
     }
     PROCESS_END();

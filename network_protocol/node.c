@@ -33,12 +33,14 @@ PROCESS_THREAD(sender_process, ev, data)
     PROCESS_BEGIN();
     
     
-    setup_node(callback);
+    setup_node(SENSOR, callback);
     etimer_set(&periodic_timer, SEND_INTERVAL);
 
     while(1) {
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
-        LOG_INFO("Inner process");
+        LOG_INFO("SG PARENT: ");
+        LOG_INFO_LLADDR(parent->adress);
+        LOG_INFO("\n");
         etimer_reset(&periodic_timer);
     }
     PROCESS_END();

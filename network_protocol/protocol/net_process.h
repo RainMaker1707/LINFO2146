@@ -10,18 +10,16 @@
 #include "protocol/unreliable.h"
 
 
-#define DIS_INTERVAL (120 * CLOCK_SECOND)
-#define ALIVE_INTERVAL (10 * CLOCK_SECOND)
+#define DIS_INTERVAL (30 * CLOCK_SECOND)
+#define ALIVE_INTERVAL (5 * CLOCK_SECOND)
 
 PROCESS(keep_alive_process, "alive process");
 PROCESS(dis_process, "process discovery neighbour");
 
 
-PROCESS_THREAD(keep_alive_process, ev, data)
-{
+PROCESS_THREAD(keep_alive_process, ev, data){
     static struct etimer periodic_timer;
     PROCESS_BEGIN();
-    
     etimer_set(&periodic_timer, ALIVE_INTERVAL);
 
     while(1) {

@@ -1,9 +1,9 @@
-#define TCP  128  // Srt the Bit to TCP packet (not implemented) other flag are use t
-#define SYN  64  
-#define ACK  32
-#define NACK 16
-#define RST  8
-#define DIO  4 
-#define DIS  2
-#define PRT  1
-#define UDP 0 // if using UDP all flags to 0
+#define TCP  128    // NOT USED
+#define SYN  64     // NOT USED
+#define ACK  32     // ACKNOWLEDGED / OK
+#define NACK 16     // NOT ACKNOWLEDGED / NOT OK
+#define RLY  8      // RELAY
+#define DIO  4      // ALIVE
+#define DIS  2      // DISCOVER
+#define PRT  1      // DECIDED PARENT
+#define UDP 0       // if using UDP all flags to 0 (packet from mote/user)
