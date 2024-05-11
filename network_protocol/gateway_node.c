@@ -29,12 +29,12 @@ PROCESS_THREAD(sender_process, ev, data)
     PROCESS_BEGIN();
     
     
-    setup_subgateway(true, callback);
+    setup_gateway(true, false, callback);
     etimer_set(&periodic_timer, SEND_INTERVAL);
 
     while(1) {
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
-        LOG_INFO("PARENT Inner process");
+        LOG_INFO("GATEWAY Inner process");
         etimer_reset(&periodic_timer);
     }
     PROCESS_END();

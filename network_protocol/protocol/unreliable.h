@@ -34,6 +34,7 @@ typedef void (*fct_ptr)(packet_t* packet);
 fct_ptr node_callback;
 
 bool accept_childs_config = false; // By default mote doesn't accept child
+bool need_parent_config = true; // By default mote accept parent;
 
 
 
@@ -131,38 +132,8 @@ mote_t* search_max_under_x(list_t* neighbors, int x){
     return mote;
 }
 
-
-
-
-
-// ################ DISCOVER API ##########################
-
-void discover_neighbor(){
-    // Send DIS
-    packet_t* packet = create_packet(DIS, 0, (const linkaddr_t*)&linkaddr_node_addr, NULL, "DISCOVER!");
-    unreliable_send(packet, BROADCAST);
-    free(packet);
-}
-
-void receive_dis(packet_t* packet, const linkaddr_t* src){
-    
-    LOG_INFO("CONTAINS: %d    :", list_contains_src(neighbors, (linkaddr_t*)src));
-    LOG_INFO_LLADDR(src);
-    if(!list_contains_src(neighbors, (linkaddr_t*)src)) {
-        mote_t* mote = create_mote(0, packet->src, 10);
-        // TODO check if addr is not already in neighbors
-        add_child(neighbors, mote);
-        LOG_INFO("\nAdd mote in neighbors list\n");
-    }
-    if(packet->flags == DIS){
-        // Respond to DIS but not DIS+ACK
-        LOG_INFO("DIS RECEIVED!\n");
-        packet_t* packet = create_packet(DIS+ACK, 1, (const linkaddr_t*)&linkaddr_node_addr, src, "DIS+ACK");
-        unreliable_send(packet, UNICAST);
-        free(packet);
-    }else LOG_INFO("DIS+ACK received!\n");
-
-    // TEST print mote lsit
+// TEST print mote lsit
+void print_neighbors(){
     if(neighbors->head != NULL){
         neighbors->current = neighbors->head;
         while(neighbors->current != neighbors->tail){
@@ -177,13 +148,6 @@ void receive_dis(packet_t* packet, const linkaddr_t* src){
     }
 }
 
-
-
-
-
-
-// ############### ALIVE API ################
-
 node_t* find_neighbor_in_list(list_t* list, const linkaddr_t* address){
     if(list == NULL || list->head == NULL) return NULL; 
     list->current = list->head;
@@ -194,6 +158,89 @@ node_t* find_neighbor_in_list(list_t* list, const linkaddr_t* address){
     }
 }
 
+
+
+
+// ################## PRT API ################
+
+
+void send_prt_custom(const linkaddr_t* src, uint8_t flags){
+    packet_t* prt_packet = create_packet(flags, 0, (const linkaddr_t*)&linkaddr_node_addr, src, "ADOPT?");
+    unreliable_send(prt_packet, UNICAST);
+    free(prt_packet);
+    LOG_INFO("PRT sent\n");
+}
+
+void send_prt_ack(const linkaddr_t* src){
+    send_prt_custom(src, PRT+ACK);
+}
+
+void send_prt_nack(const linkaddr_t* src){
+    send_prt_custom(src, PRT+NACK);
+}
+
+void send_prt(const linkaddr_t* src){
+    if(need_parent_config){
+        send_prt_custom(src, PRT);
+    }
+}
+
+void prt_received(packet_t* packet, const linkaddr_t* src){
+    if(!accept_childs_config || (parent == NULL && need_parent_config)) {
+        send_prt_nack(src);
+        return;
+    }
+    add_child(childs, find_neighbor_in_list(neighbors, src)->mote);
+    send_prt_ack(src);
+    LOG_INFO("CHILD accepted -> ");
+    LOG_INFO_LLADDR(src);
+    LOG_INFO("\n");
+}
+
+
+void prt_ack_receive(packet_t* packet, const linkaddr_t* src){
+    if(parent != NULL) return;  // Parent is already setup
+    parent = find_neighbor_in_list(neighbors, src)->mote;
+    LOG_INFO("PARENT setup as -> ");
+    LOG_INFO_LLADDR(src);
+    LOG_INFO("\n");
+}
+
+
+
+
+
+// ################ DISCOVER API ##########################
+
+void discover_neighbor(){
+    // Send DIS
+    packet_t* packet = create_packet(DIS, 0, (const linkaddr_t*)&linkaddr_node_addr, NULL, "DISCOVER!");
+    unreliable_send(packet, BROADCAST);
+    free(packet);
+}
+
+void receive_dis(packet_t* packet, const linkaddr_t* src){
+    if(!list_contains_src(neighbors, (linkaddr_t*)src)) {
+        mote_t* mote = create_mote(0, packet->src, 10);
+        add_child(neighbors, mote);
+        LOG_INFO("Add mote in neighbors list\n");
+    }
+    if(packet->flags == DIS){
+        // Respond to DIS but not DIS+ACK
+        LOG_INFO("DIS RECEIVED!\n");
+        packet_t* packet = create_packet(DIS+ACK, 1, (const linkaddr_t*)&linkaddr_node_addr, src, "DIS+ACK");
+        unreliable_send(packet, UNICAST);
+        free(packet);
+    }else LOG_INFO("DIS+ACK received!\n");
+    send_prt(src);
+}
+
+
+
+
+
+
+// ############### ALIVE API ################
 
 /*
   set the last time heard parameter of the neighbor to the current cpu time
@@ -276,12 +323,7 @@ void unreliable_wait_receive(const void *data, uint16_t len,
     char encoded[PACKET_SIZE];
     memcpy(&encoded, data, PACKET_SIZE);
     packet_t* packet = decode((char*)&encoded);
-    if(packet == NULL) {
-        LOG_INFO("Error decoding\n");
-        return;
-    }
-    printf("ADDR CMP: %d\n", linkaddr_cmp(packet->dst, &linkaddr_node_addr));
-    printf("NULL CMP: %d\n", linkaddr_cmp(packet->dst, &linkaddr_null));
+    if(packet == NULL) return;
     if(!linkaddr_cmp(packet->dst, &linkaddr_node_addr) && !linkaddr_cmp(packet->dst, &linkaddr_null)){
         // redistribute to parent if no child, or to child if have one that is the correct one else (if no parent and no child corresponding)
         LOG_INFO("DISCARD\n");
@@ -292,23 +334,35 @@ void unreliable_wait_receive(const void *data, uint16_t len,
     LOG_INFO_("\n");
     
     switch(packet->flags){
+        case UDP:
+            // TODO: retransmit packets.
+            break;
+        case PRT:
+            LOG_INFO("PRT received");
+            prt_received(packet, src);
+            break;
+        case PRT+ACK:
+            LOG_INFO("PRT+ACK received");
+            prt_ack_receive(packet, src);
+            break;
+        case PRT+NACK:
+            LOG_INFO("PRT+NACK received");
+            break;
+        case DIO:
+            neighbor_is_alive(neighbors, src);
+			break;
         case DIS:
             receive_dis(packet, src);
             break;
         case DIS+ACK:
             receive_dis(packet, src);
             break;
-        case UDP:
-                break;
-		case DIO:
-            //used for the alive system
-            neighbor_is_alive(neighbors, src);
-			break;
         default:
             LOG_INFO("No flags recognized %d\n", packet->flags);
             break;
     }
     node_callback(packet);
+    free(packet);
 }
 
 
@@ -326,25 +380,27 @@ void unreliable_wait_receive(const void *data, uint16_t len,
     @Param: accept_childs: if true then the mote will accept child when receive a PRT packet
                             by default set as false
 */
-void setup_custom_node(bool accept_child, void* callback){
+void setup_gateway(bool accept_child, bool need_parent, void* callback){
     // NULLNET config
     nullnet_buf = buffer;
     nullnet_len = PACKET_SIZE;
     // SETUP inner list
     if(accept_child) childs = create_list(); // empty at first, only add when asked to be parent and accept
     neighbors = create_list();
-    // DIS SEND
-    discover_neighbor();
-    accept_childs_config = accept_child; // To know if the node accept childs
+    accept_childs_config = accept_child; // To know if node accept childs
+    need_parent_config = need_parent;    // To know if node accept parent
     node_callback = (fct_ptr)callback;
     nullnet_set_input_callback(unreliable_wait_receive);
     LOG_INFO("Node setup ok\n");
 }
 
+void setup_subgateway(bool accept_child, void* callback){
+    setup_gateway(accept_child, true, callback);
+}
+
 
 void setup_node(void* callback) {
-    // setup NULLNET
-    setup_custom_node(false, callback);
+    setup_subgateway(false, callback);
 }
 
 
