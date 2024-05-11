@@ -257,30 +257,45 @@ void neighbor_is_alive(list_t* list, const linkaddr_t* neigh_address){
 */
 void process_neighbors_last_time(list_t* list){
     if(list == NULL||list->head == NULL) return;
-    long alive_difference = ALIVE_MAX_INTERVAL * CLOCK_SECOND;
+    unsigned long long alive_difference = 20 * CLOCK_SECOND;
 
-    list->current = list->head;
-    if(list->head == list->tail){
-        if(clock_time() - list->current->mote->last_time_heard > alive_difference){
-            free(list->current->mote);
-            free(list->current);
-            list->head = NULL;
-            list->tail = NULL;
-            list->current = NULL;
-            printf("removed neighbor from list\n");
-            return;
-        }
-    }
     node_t* tmp = list->current;
-    while(list->current != list->tail){
-        printf("Checking neighbor while loop\n");
+    list->current = list->head;
+    while(1){
         if(clock_time() - list->current->mote->last_time_heard > alive_difference){
-            tmp->next = list->current->next;
-            free(list->current->mote);
-            free(list->current);
-            printf("removed neighbor from list\n");
-            return;
+            if(list->head==list->tail){
+                printf("remove neigh only neighbor of list\n");
+                free(list->current->mote);
+                free(list->current);
+                list->head = NULL;
+                list->tail = NULL;
+                list->current = NULL;
+                return;
+            }
+            if(list->current == list->head){
+                printf("remove neigh first of list\n");
+                list->head = list->current->next;
+                free(list->current->mote);
+                free(list->current);
+                list->current = list->head;
+                list->tail->next = list->head;
+            } else if(list->current == list->tail){
+                printf("remove neigh last of list\n");
+                tmp->next = list->head;
+                free(list->current->mote);
+                free(list->current);
+                list->tail = tmp;
+            }else{
+                printf("remove neigh middle of list\n");
+                tmp->next = list->current->next;
+                free(list->current->mote);
+                free(list->current);
+                list->current = tmp;
+            }
+            printf("removed neighbor from list, diff was %llu \n", clock_time() - list->current->mote->last_time_heard);
+
         }
+        if(list->current == list->tail) return;
         tmp = list->current;
         list->current = list->current->next;
     }
