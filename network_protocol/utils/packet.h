@@ -15,7 +15,7 @@
 
 typedef struct packet {
     uint8_t version;
-    uint8_t packet_number; // just for reliability (like TCP)
+    uint8_t src_rank; // just for reliability (like TCP)
     uint8_t flags; // 8 bits (as TCP) if one bit is set it is a certain flag for example 10000000 == SYN packet, 01000000 == ACK packet ...
     uint8_t checksum;
     linkaddr_t *src; // Source IP 8 bytes
@@ -32,7 +32,7 @@ typedef struct reader{
 
 // ########## Function definition for easier use ########################""
 
-packet_t* create_packet(uint8_t flags, uint8_t packet_number, const linkaddr_t* source_ip, const linkaddr_t* dest_ip, char* payload);
+packet_t* create_packet(uint8_t flags, uint8_t src_rank, const linkaddr_t* source_ip, const linkaddr_t* dest_ip, char* payload);
 bool check_packet(packet_t* packet);
 uint8_t compute_checksum(packet_t* packet); 
 reader_t* check_read_packet(packet_t* packet);
@@ -54,17 +54,17 @@ linkaddr_t* char_to_linkaddr(char* str);
     The checksum will ensure the packet has not been corrupted while the transportation.
     @Params: flags int array, len 8, if flags[i]<0 throw error, else if flags[i] == 0 then bit[i] == 0, else bit[i] == 1 and then flag is set 
                         [TCP, SYN, ACK, NACK, RST, FIN, DIS, PRT]
-    @Param: packet_number
+    @Param: src_rank
     @Param: source_ip
     @Param: dest_ip
     @Param: payload
     @Returns: packet_t containing all the information OR reject the packet and return NULL
 */
-packet_t* create_packet(uint8_t flags, uint8_t packet_number, const linkaddr_t* source_ip, const linkaddr_t* dest_ip, char* payload){
+packet_t* create_packet(uint8_t flags, uint8_t src_rank, const linkaddr_t* source_ip, const linkaddr_t* dest_ip, char* payload){
     packet_t* packet = malloc(sizeof(packet_t));
     packet->version = VERSION;
     packet->flags = flags;
-    packet->packet_number = packet_number;
+    packet->src_rank = src_rank;
     packet->src = (linkaddr_t*)source_ip;
     if(dest_ip == NULL) packet->dst = (linkaddr_t*)&linkaddr_null;
     else packet->dst = (linkaddr_t*)dest_ip;
@@ -124,7 +124,7 @@ char* encode(packet_t* packet){
     char* buffer = malloc(sizeof(char)*PACKET_SIZE);
     buffer[0] = VERSION;
     buffer[1] = packet->flags;
-    buffer[2] = packet->packet_number;
+    buffer[2] = packet->src_rank;
     buffer[3] = packet->checksum;
     for(int i = 0; i<8; i++){
         buffer[4+i] = ((char*)packet->src)[i];
@@ -144,7 +144,7 @@ packet_t* decode(char* buffer){
     packet_t* packet = malloc(sizeof(packet_t));
     packet->version = buffer[0];
     packet->flags = buffer[1];
-    packet->packet_number = buffer[2];
+    packet->src_rank = buffer[2];
     packet->checksum = buffer[3];
     packet->src = malloc(16*sizeof(char));
     packet->dst = malloc(16*sizeof(char));

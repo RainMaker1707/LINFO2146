@@ -14,7 +14,7 @@
 #define SEND_INTERVAL (35 * CLOCK_SECOND)
 
 PROCESS(sender_process, "Node example alive");
-AUTOSTART_PROCESSES(&sender_process,&keep_alive_process, &dis_process, &keep_alive_process);
+AUTOSTART_PROCESSES(&sender_process, &keep_alive_process, &dis_process);
 
 
 

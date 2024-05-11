@@ -48,14 +48,7 @@ list_t* create_list(){
 
 
 void add_child(list_t* list, mote_t* mote){
-    if(mote == NULL) {
-        printf("\033[33mError in add_child(): param node can't be NULL\033[0m\n");
-        exit(1);
-    }
-    if(list == NULL) {
-        printf("\033[33mError in add_child(): param list can't be NULL\033[0m\n");
-        exit(1);
-    }
+    if(mote == NULL ||list == NULL) return;
     node_t* node = malloc(sizeof(node_t));
     node->mote = mote;
     if(list->head == NULL){

@@ -18,7 +18,7 @@
 #define SEND_INTERVAL (35 * CLOCK_SECOND)
 
 PROCESS(sender_process, "Node example alive");
-AUTOSTART_PROCESSES(&sender_process,&keep_alive_process, &dis_process, &keep_alive_process);
+AUTOSTART_PROCESSES(&sender_process, &keep_alive_process, &dis_process);
 
 
 
@@ -38,8 +38,9 @@ PROCESS_THREAD(sender_process, ev, data)
 
     while(1) {
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
+        LOG_INFO("PARENT NULL %d\n", parent==NULL);
         LOG_INFO("SG PARENT: ");
-        LOG_INFO_LLADDR(parent->adress);
+        if(parent!=NULL) LOG_INFO_LLADDR(parent->adress);
         LOG_INFO("\n");
         etimer_reset(&periodic_timer);
     }
