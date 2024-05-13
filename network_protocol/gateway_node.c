@@ -9,6 +9,8 @@
 
 #include "utils/flags.h"
 #include "protocol/net_process.h"
+#include "dev/serial-line.h"
+#include "cpu/msp430/dev/uart0.h"
 
 
 #define SEND_INTERVAL (35 * CLOCK_SECOND)
@@ -27,6 +29,9 @@ PROCESS_THREAD(sender_process, ev, data)
     static struct etimer periodic_timer;
     PROCESS_BEGIN();
     
+    /* start tools to communicate with the server*/
+    serial_line_init();
+    uart0_set_input(serial_line_input_byte);
     
     setup_gateway(GATEWAY, true, false, callback);
     etimer_set(&periodic_timer, SEND_INTERVAL);

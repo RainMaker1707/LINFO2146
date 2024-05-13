@@ -11,15 +11,25 @@ def recv(sock):
         data = sock.recv(1)
     return buf
 
+def process_data(data):
+    str = data.decode("utf-8")
+    if "Server log" in str:
+        print(str)
+    else:
+        print("skipped message + " + str + " + \n")
+
+
 def main(ip, port):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.connect((ip, port))
 
-    for _ in range(20): 
-        sock.send(b"test\n")
+    while True:
         data = recv(sock)
-        print(data.decode("utf-8"))
-        time.sleep(1)
+        process_data(data)
+        #print(data.decode("utf-8"))
+        #sock.send(b"test\n")
+        
+        #time.sleep(0.1)
 
 
 if __name__ == "__main__":

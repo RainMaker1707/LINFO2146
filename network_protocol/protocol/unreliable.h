@@ -91,7 +91,14 @@ void print_table(){
     }
 }
 
-
+void log_packet_for_server(packet_t* packet){
+    LOG_INFO(" Server log ");
+    LOG_INFO("Src: ");
+    LOG_INFO_LLADDR((linkaddr_t*)&(packet->src));
+    LOG_INFO("Dst: ");
+    LOG_INFO_LLADDR((linkaddr_t*)&(packet->dst));
+    LOG_INFO("Payload: %s\n", packet->payload);
+}
 
 
 
@@ -247,7 +254,7 @@ void neighbor_is_alive(packet_t* packet, const linkaddr_t* neigh_address){
 */
 void process_neighbors_last_time(list_t* list){
     if(list == NULL||list->head == NULL) return;
-    unsigned long long alive_difference = 20 * CLOCK_SECOND;
+    unsigned long long alive_difference = 60 * CLOCK_SECOND;
 
     
     node_t* current = list->head;
@@ -311,6 +318,12 @@ void heartbeat(){
 
 
 void switch_responder(packet_t* packet, const linkaddr_t* src, const linkaddr_t* dest){
+
+    if(node_rank==2){ // Current gateway rank, TODO change later to match the actual rank of the gateway
+        log_packet_for_server(packet);
+    }
+    //log_packet_for_server(packet);
+
     switch(packet->flags){
         case UDP:
             // GIVE PACKET TO USER (MOTE).
