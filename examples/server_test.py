@@ -11,12 +11,18 @@ def recv(sock):
         data = sock.recv(1)
     return buf
 
-def process_data(data):
+def process_data(data, sock):
     str = data.decode("utf-8")
     if "Server log" in str:
-        print(str)
+        str_split = str.split("[INFO: App       ] ")
+        
+        src = str_split[2].split(" ")[1]
+        dst = str_split[3].split(" ")[1]
+        payload = str_split[4].split(" ")[1]
+        print(f"src: {src}, dst: {dst}, payload: {payload}\n")
+        sock.send(b"ACK message\n")
     else:
-        print("skipped message + " + str + " + \n")
+        return
 
 
 def main(ip, port):
@@ -25,7 +31,8 @@ def main(ip, port):
 
     while True:
         data = recv(sock)
-        process_data(data)
+        process_data(data, sock)
+        
         #print(data.decode("utf-8"))
         #sock.send(b"test\n")
         

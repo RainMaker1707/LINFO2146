@@ -16,7 +16,8 @@
 #define SEND_INTERVAL (35 * CLOCK_SECOND)
 
 PROCESS(sender_process, "Node example alive");
-AUTOSTART_PROCESSES(&sender_process, &keep_alive_process, &dis_process);
+PROCESS(test_serial, "Test serial");
+AUTOSTART_PROCESSES(&sender_process, &keep_alive_process, &dis_process, &test_serial);
 
 
 void callback(packet_t* packet){
@@ -29,9 +30,6 @@ PROCESS_THREAD(sender_process, ev, data)
     static struct etimer periodic_timer;
     PROCESS_BEGIN();
     
-    /* start tools to communicate with the server*/
-    serial_line_init();
-    uart0_set_input(serial_line_input_byte);
     
     setup_gateway(GATEWAY, true, false, callback);
     etimer_set(&periodic_timer, SEND_INTERVAL);
@@ -43,4 +41,25 @@ PROCESS_THREAD(sender_process, ev, data)
         etimer_reset(&periodic_timer);
     }
     PROCESS_END();
+}
+
+PROCESS_THREAD(test_serial, ev, serv_data)
+{
+
+    //static struct etimer timer;
+
+    PROCESS_BEGIN();
+    /* start tools to communicate with the server*/
+    serial_line_init();
+    uart0_set_input(serial_line_input_byte);
+    
+
+    while(1) {
+        
+        PROCESS_YIELD();
+        if(ev==serial_line_event_message){
+        printf("received %s from server \n", (char*) serv_data);
+        }
+    }
+  PROCESS_END();
 }

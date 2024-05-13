@@ -319,7 +319,7 @@ void heartbeat(){
 
 void switch_responder(packet_t* packet, const linkaddr_t* src, const linkaddr_t* dest){
 
-    if(node_rank==2){ // Current gateway rank, TODO change later to match the actual rank of the gateway
+    if(node_rank==2 ){ // Current gateway rank, TODO add pkt flag filter like && packet->flags == UDP
         log_packet_for_server(packet);
     }
     //log_packet_for_server(packet);
