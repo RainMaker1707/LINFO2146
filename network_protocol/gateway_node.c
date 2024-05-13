@@ -17,9 +17,8 @@ PROCESS(sender_process, "Node example alive");
 AUTOSTART_PROCESSES(&sender_process, &keep_alive_process, &dis_process);
 
 
-
 void callback(packet_t* packet){
-    LOG_INFO("PARENT NODE CALLBACK\n");
+    LOG_INFO("##   GATEWAY NODE CALLBACK\n");
 }
 
 
@@ -34,7 +33,8 @@ PROCESS_THREAD(sender_process, ev, data)
 
     while(1) {
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
-        LOG_INFO("GATEWAY Inner process");
+        LOG_INFO("GATEWAY Inner process \n");
+        print_table();
         etimer_reset(&periodic_timer);
     }
     PROCESS_END();

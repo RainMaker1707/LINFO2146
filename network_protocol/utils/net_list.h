@@ -5,9 +5,10 @@
 
 typedef struct mote{
     int rank;
-    const linkaddr_t* adress;
+    linkaddr_t adress;
     int signal_strenght;
     unsigned long long last_time_heard;
+    linkaddr_t src;
 } mote_t;
 
 typedef struct node {
@@ -18,31 +19,14 @@ typedef struct node {
 typedef struct list{
     node_t* head;
     node_t* tail;
-    node_t* current;
 }list_t;
 
-/*
-*/
-list_t* create_list();
-
-/*
-*/
-void add_child(list_t* list, mote_t* mote);
-
-/*
-*/
-void free_list(list_t* list);
-
-/*
-*/
-mote_t* create_mote(int rank, const linkaddr_t* adress, int signal_strenght);
 
 
 list_t* create_list(){
     list_t* list = malloc(sizeof(list_t));
     list->head = NULL;
     list->tail = NULL;
-    list->current = NULL;
     return list;
 }
 
@@ -65,23 +49,26 @@ void add_child(list_t* list, mote_t* mote){
 
 void free_list(list_t* list){
     node_t* to_free = list->head;
-    list->current = list->head;
-    while(list->current != list->tail){
-        to_free = list->current;
-        list->current = list->current->next;
+    node_t* current = list->head;
+    while(current != list->tail){
+        to_free = current;
+        current = current->next;
         free(to_free->mote);
         free(to_free);
     }
-    free(list->current);
+    free(current);
     free(list);
 }
 
-mote_t* create_mote(int rank, const linkaddr_t* adress, int signal_strenght){
+mote_t* create_mote(int rank, const linkaddr_t* adress, int signal_strenght, const linkaddr_t* src){
     mote_t* mote = malloc(sizeof(mote_t));
     mote->rank = rank;
-    mote->adress = adress;
+    mote->adress = *adress;
+    linkaddr_copy((linkaddr_t*)&(mote->adress), adress);
     mote->signal_strenght = signal_strenght;
     mote->last_time_heard = clock_time();
+    mote->src = *src;
+    linkaddr_copy((linkaddr_t*)&(mote->src), src);
     return mote;
 }
 
@@ -91,11 +78,11 @@ mote_t* create_mote(int rank, const linkaddr_t* adress, int signal_strenght){
 */
 bool list_contains_src(list_t* list, linkaddr_t* src){
     if(list->head != NULL){
-        list->current = list->head;
+        node_t* current = list->head;
         while(1){
-            if(linkaddr_cmp(list->current->mote->adress, src)) return true;
-            if(list->current == list->tail) break;
-            list->current = list->current->next;
+            if(linkaddr_cmp((const linkaddr_t*)&(current->mote->adress), src)) return true;
+            if(current == list->tail) break;
+            current = current->next;
         }
     }
     return false;

@@ -39,9 +39,10 @@ PROCESS_THREAD(sender_process, ev, data)
     while(1) {
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
         LOG_INFO("PARENT NULL %d\n", parent==NULL);
-        LOG_INFO("SG PARENT: ");
-        if(parent!=NULL) LOG_INFO_LLADDR(parent->adress);
+        LOG_INFO("PARENT:  ");
+        if(parent!=NULL) LOG_INFO_LLADDR((linkaddr_t*)&(parent->adress));
         LOG_INFO("\n");
+        print_table();
         etimer_reset(&periodic_timer);
     }
     PROCESS_END();
