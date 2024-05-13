@@ -94,9 +94,9 @@ void print_table(){
 void log_packet_for_server(packet_t* packet){
     LOG_INFO(" Server log ");
     LOG_INFO("Src: ");
-    LOG_INFO_LLADDR((linkaddr_t*)&(packet->src));
+    LOG_INFO_LLADDR(packet->src);
     LOG_INFO("Dst: ");
-    LOG_INFO_LLADDR((linkaddr_t*)&(packet->dst));
+    LOG_INFO_LLADDR(packet->dst);
     LOG_INFO("Payload: %s\n", packet->payload);
 }
 
