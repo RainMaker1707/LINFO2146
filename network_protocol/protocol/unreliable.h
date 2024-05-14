@@ -232,6 +232,9 @@ void neighbor_is_alive(packet_t* packet, const linkaddr_t* neigh_address){
     node_t* neighbor = find_neighbor_in_list(neighbors, packet->src);
     if(neighbor == NULL){
         discover_neighbor();
+        LOG_INFO(" neighbor not found ");
+        LOG_INFO_LLADDR(packet->src);
+        LOG_INFO("\n");
         return;
     }
     neighbor->mote->last_time_heard = clock_time();
@@ -384,7 +387,14 @@ void broadcast_retransmition(packet_t* packet, const linkaddr_t* src){
             linkaddr_copy(packet_rly->dst,  &parent->adress);
             unreliable_send(packet_rly, UNICAST);
         }
-        send_to_childs(packet_rly, src);
+
+        LOG_INFO("my rank is %d\n", node_rank);
+        if (node_rank == GATEWAY) {
+            LOG_INFO("I am the gateway, no send_to_childs\n");
+        }else{
+            send_to_childs(packet_rly, src);
+        }
+        
         
     }
     free_packet(packet_rly);
