@@ -171,16 +171,17 @@ void free_packet(packet_t* packet){
     Retrieve the list of flags from the raw uint8_t
     @Param: packet_t* packet: the decoded packet you want to read
     @Returns: uint8_t* to a uint8_t array of 8 elements
-                [TCP, SYN, ACK, NACK, RST, FIN, DIS, PRT]
+                [TCP, MLT, ACK, NACK, RLY, DIO, DIS, PRT]
                 [0, 0, 0, 0, 0, 0, 0, 0] == UDP
-                [1, 1, 1, 0, 0 ,0 ,0 ,0] == TCP SYN ACK
+                [1, 1, 1, 0, 0 ,0 ,0 ,0] == TCP MLT ACK
 */
 uint8_t* retrieve_flags(packet_t* packet){
     uint8_t* flags = malloc(8*sizeof(uint8_t));
+    uint8_t flags_tmp = packet->flags;
     int idx = 0;
     for(int i = 128; i>=1; i=i/2){
-        if(packet->flags >= i) {
-            packet->flags -= i;
+        if(flags_tmp >= i) {
+            flags_tmp -= i;
             flags[idx] = 1;
         }
         idx++;
