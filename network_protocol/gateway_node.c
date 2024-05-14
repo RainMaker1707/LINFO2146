@@ -17,7 +17,7 @@
 
 PROCESS(sender_process, "Node example alive");
 PROCESS(test_serial, "Test serial");
-AUTOSTART_PROCESSES(&sender_process, &keep_alive_process);
+AUTOSTART_PROCESSES(&sender_process, &keep_alive_process, &test_serial);
 
 
 void callback(packet_t* packet){

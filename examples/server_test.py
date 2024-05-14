@@ -15,12 +15,14 @@ def process_data(data, sock):
     str = data.decode("utf-8")
     if "Server log" in str:
         str_split = str.split("[INFO: App       ] ")
-        
         src = str_split[2].split(" ")[1]
         dst = str_split[3].split(" ")[1]
         payload = str_split[4].split(" ")[1]
         print(f"src: {src}, dst: {dst}, payload: {payload}\n")
-        sock.send(b"ACK message\n")
+        data = f"{dst} on 5\n"
+        sock.send(bytes(data, "utf-8"))
+    elif "Server ACK" in str:
+        print("ACK received from \n")
     else:
         return
 
@@ -33,10 +35,7 @@ def main(ip, port):
         data = recv(sock)
         process_data(data, sock)
         
-        #print(data.decode("utf-8"))
-        #sock.send(b"test\n")
-        
-        #time.sleep(0.1)
+     
 
 
 if __name__ == "__main__":

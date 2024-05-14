@@ -9,6 +9,8 @@
 
 #include "../utils/packet.h"
 #include "../utils/net_list.h"
+#include "random.h"
+
 
 #define LOG_MODULE "App"
 #define LOG_LEVEL LOG_LEVEL_INFO
@@ -24,7 +26,7 @@
 #define GATEWAY 2
 #define SUBGATEWAY 1
 #define SENSOR 0
-
+#define GATEWAY_ADDR {{ 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }}
 
 list_t* childs = NULL;
 mote_t* parent = NULL;
@@ -162,7 +164,15 @@ void unreliable_send(packet_t* packet, int mode){
 }
 
 
-
+void send_light(){
+    static linkaddr_t dest_addr = GATEWAY_ADDR;   
+    char* payload = malloc(12*sizeof(char));
+    sprintf(payload, "%d", random_rand()%101);
+    packet_t* packet = create_packet(UDP, node_rank, (const linkaddr_t*)&linkaddr_node_addr, (const linkaddr_t*)&dest_addr, payload);
+    unreliable_send(packet, BROADCAST);
+    free_packet(packet);
+    free(payload);
+}
 
 
 // ################## PRT API ################
@@ -324,6 +334,17 @@ void switch_responder(packet_t* packet, const linkaddr_t* src, const linkaddr_t*
         case UDP:
             // GIVE PACKET TO USER (MOTE).
             LOG_INFO("UDP received\n");
+
+            /* LOG TO THE SERVER (do not delete)*/
+            if(node_rank == GATEWAY){ 
+                LOG_INFO("Server log");
+                LOG_INFO("light: ");
+                LOG_INFO_LLADDR(packet->src);
+                LOG_INFO("from: ");
+                LOG_INFO_LLADDR(src);
+                LOG_INFO("Payload: %s\n", packet->payload);
+                LOG_INFO("\n");
+            }
             node_callback(packet);
             break;
         case PRT:       // ASK FOR PARENTING
@@ -388,10 +409,8 @@ void broadcast_retransmition(packet_t* packet, const linkaddr_t* src){
             unreliable_send(packet_rly, UNICAST);
         }
 
-        LOG_INFO("my rank is %d\n", node_rank);
-        if (node_rank == GATEWAY) {
-            LOG_INFO("I am the gateway, no send_to_childs\n");
-        }else{
+
+        if (node_rank != GATEWAY) {
             send_to_childs(packet_rly, src);
         }
         

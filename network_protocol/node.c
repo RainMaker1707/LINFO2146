@@ -42,6 +42,7 @@ PROCESS_THREAD(sender_process, ev, data)
         // if(parent!=NULL) LOG_INFO_LLADDR((linkaddr_t*)&(parent->adress));
         // LOG_INFO("\n");
         print_table();
+        send_light();
         etimer_reset(&periodic_timer);
     }
     PROCESS_END();
