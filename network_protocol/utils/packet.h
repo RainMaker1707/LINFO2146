@@ -12,6 +12,9 @@
 
 #define VERSION 0x01
 #define PACKET_SIZE 32
+#define ADDR_LEN 8
+#define HEADER_LEN 4                // header is 4 bytes
+#define PACKET_PAYLOAD_MAX_LEN 12   // Payload is 12 bytes max
 
 typedef struct packet {
     uint8_t version;
@@ -65,11 +68,14 @@ packet_t* create_packet(uint8_t flags, uint8_t src_rank, const linkaddr_t* sourc
     packet->version = VERSION;
     packet->flags = flags;
     packet->src_rank = src_rank;
-    packet->src = (linkaddr_t*)source_ip;
-    if(dest_ip == NULL) packet->dst = (linkaddr_t*)&linkaddr_null;
-    else packet->dst = (linkaddr_t*)dest_ip;
+    packet->src = malloc(sizeof(linkaddr_t));
+    packet->dst = malloc(sizeof(linkaddr_t));
+    linkaddr_copy(packet->src, source_ip);
+    if(dest_ip == NULL) linkaddr_copy(packet->dst, &linkaddr_null);
+    else linkaddr_copy(packet->dst, dest_ip);
     packet->checksum = compute_checksum(packet); // TODO, for now 1byte at 1
     packet->payload = payload;
+    strncpy(packet->payload, payload, PACKET_PAYLOAD_MAX_LEN);
     return packet;
 }
 
@@ -126,13 +132,9 @@ char* encode(packet_t* packet){
     buffer[1] = packet->flags;
     buffer[2] = packet->src_rank;
     buffer[3] = packet->checksum;
-    for(int i = 0; i<8; i++){
-        buffer[4+i] = ((char*)packet->src)[i];
-        if(packet->dst != NULL) buffer[12+i] = ((char*)packet->dst)[i];
-    }
-    for(int i = 0; i<12; i++){
-        buffer[20+i] = packet->payload[i];
-    }
+    memcpy(&buffer[4], packet->src, ADDR_LEN);
+    memcpy(&buffer[12], packet->dst, ADDR_LEN);
+    memcpy(&buffer[20], packet->payload, 12);
     return buffer;
 }
 
@@ -162,7 +164,8 @@ packet_t* decode(char* buffer){
     As the packet contains malloced char* you need to free it from this function
 */
 void free_packet(packet_t* packet){
-    free(packet->payload);
+    free(packet->src);
+    free(packet->dst);
     free(packet);
 }
 

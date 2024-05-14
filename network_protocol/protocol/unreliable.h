@@ -18,8 +18,6 @@
 #define MULTICAST 2
 
 #define PACKET_MAX_LEN PACKET_SIZE           // packet are 32 bytes max
-#define HEADER_LEN 4                // header is 4 bytes
-#define PACKET_PAYLOAD_MAX_LEN 12   // Payload is 12 bytes max
 
 #define ALIVE_MAX_INTERVAL 15
 
@@ -92,12 +90,20 @@ void print_table(){
 }
 
 void log_packet_for_server(packet_t* packet){
-    LOG_INFO(" Server log ");
+    LOG_INFO("Server log\n");
     LOG_INFO("Src: ");
     LOG_INFO_LLADDR(packet->src);
+    LOG_INFO("\n");
     LOG_INFO("Dst: ");
     LOG_INFO_LLADDR(packet->dst);
+    LOG_INFO("\n");
     LOG_INFO("Payload: %s\n", packet->payload);
+}
+
+bool contains_rly(packet_t* packet){
+    uint8_t* flags = retrieve_flags(packet);
+    // flags == {TCP, MLT, ACk, NACK, RLY, DIO, DIS, PRT}
+    return flags[4] == 1;
 }
 
 
@@ -106,12 +112,13 @@ void log_packet_for_server(packet_t* packet){
 // ##################### SENDER ########################
 
 
-void unicast_unreliable_send(uint8_t* buffer){
-    nullnet_len = PACKET_SIZE;
+void unicast_unreliable_send(uint8_t* buffer, const linkaddr_t* dst){
+    //nullnet_len = PACKET_SIZE;
     memcpy(nullnet_buf, buffer, PACKET_SIZE);  // Use nullnet_buf directly
-    int start = clock_time();
-    while(clock_time() - start <= 10){continue;}
-    NETSTACK_NETWORK.output(NULL);
+    // Copy dest in a new linkaddr_t to avoid rewritting pointer
+    linkaddr_t dest;
+    linkaddr_copy((linkaddr_t*)&dest, (const linkaddr_t*)&(find_neighbor_in_list(neighbors, dst)->mote->src));
+    NETSTACK_NETWORK.output(&dest);
 }
 
 
@@ -139,7 +146,7 @@ void unreliable_send(packet_t* packet, int mode){
     uint8_t* buffer = (uint8_t*) encode(packet);
     switch(mode){
         case UNICAST: 
-            unicast_unreliable_send(buffer);
+            unicast_unreliable_send(buffer, packet->dst);
             break;
         case BROADCAST: 
             broadcast_unreliable_send(buffer);
@@ -165,17 +172,11 @@ void send_prt(const linkaddr_t* src){
         packet_t* packet = create_packet(PRT, node_rank, (const linkaddr_t*)&linkaddr_node_addr, src, "PARENT");
         unreliable_send(packet, UNICAST);
         free_packet(packet);
-        LOG_INFO("PRT sent ");
-        LOG_INFO_LLADDR(src);
-        LOG_INFO("\n");
     }
 }
 
 void prt_received(packet_t* packet, const linkaddr_t* src){
     add_child(childs, find_neighbor_in_list(neighbors, src)->mote);
-    LOG_INFO("CHILD accepted -> ");
-    LOG_INFO_LLADDR(src);
-    LOG_INFO("\n");
 }
 
 
@@ -204,14 +205,9 @@ void discover_neighbor(){
 }
 
 void receive_dis(packet_t* packet, const linkaddr_t* src){
-    LOG_INFO("From ");
-    LOG_INFO_LLADDR(src);
-    LOG_INFO("\n");
-
     if(!list_contains_src(neighbors, (linkaddr_t*)packet->src)) {
         mote_t* mote = create_mote(packet->src_rank, packet->src, 10, src); // TODO: replace 10 by signal strength
         add_child(neighbors, mote);
-        LOG_INFO("Add mote in neighbors list\n");
     }
     // Respond to DIS but not DIS+ACK
     if(packet->flags == DIS){ 
@@ -232,17 +228,12 @@ void receive_dis(packet_t* packet, const linkaddr_t* src){
   set the last time heard parameter of the neighbor to the current cpu time
 */
 void neighbor_is_alive(packet_t* packet, const linkaddr_t* neigh_address){
-    if(neighbors == NULL || neigh_address == NULL) return;
-    node_t* neighbor = find_neighbor_in_list(neighbors, neigh_address);
+    if(neighbors == NULL || neigh_address == NULL || packet == NULL) return;
+    node_t* neighbor = find_neighbor_in_list(neighbors, packet->src);
     if(neighbor == NULL){
-        // Do something if not in the list like send a DIS ?
-        packet_t* packet = create_packet(DIS, node_rank, (const linkaddr_t*)&linkaddr_node_addr, neigh_address, "DISCOVER!");
-        unreliable_send(packet, BROADCAST);
-        free_packet(packet);
-        printf("Neighbor is not in the list\n");
+        discover_neighbor();
         return;
     }
-    printf("setting time for neighbor\n");
     neighbor->mote->last_time_heard = clock_time();
 }
 
@@ -318,11 +309,13 @@ void heartbeat(){
 
 
 void switch_responder(packet_t* packet, const linkaddr_t* src, const linkaddr_t* dest){
-
-    if(node_rank==2 ){ // Current gateway rank, TODO add pkt flag filter like && packet->flags == UDP
-        log_packet_for_server(packet);
+    // Remove RLY flag if contained
+    if(contains_rly(packet)) {
+        packet->flags -= RLY;
     }
-    //log_packet_for_server(packet);
+    if(node_rank == GATEWAY){ // Current gateway rank, TODO add pkt flag filter like && packet->flags == UDP
+        //log_packet_for_server(packet);
+    }
 
     switch(packet->flags){
         case UDP:
@@ -335,16 +328,16 @@ void switch_responder(packet_t* packet, const linkaddr_t* src, const linkaddr_t*
             prt_received(packet, src);
             break;
         case DIO:       // ALIVE SYSTEM
-            LOG_INFO("DIO received\n");
+            // LOG_INFO("DIO received\n");
             neighbor_is_alive(packet, src);
             attach_parent(packet, src);
 			break;
-        case DIS:
+        case DIS:       // DISCOVER SYSTEM
             LOG_INFO("DIS received\n");
             receive_dis(packet, src);
             attach_parent(packet, src);
             break;
-        case DIS+ACK:
+        case DIS+ACK:   // DISCOVER SYSTEM
             LOG_INFO("DIS+ACK received\n");
             receive_dis(packet, src);
             attach_parent(packet, src);
@@ -355,25 +348,48 @@ void switch_responder(packet_t* packet, const linkaddr_t* src, const linkaddr_t*
     }
 }
 
-bool come_from_child(packet_t* packet){
+bool received_from_child(packet_t* packet, const linkaddr_t* src){
     if(!accept_childs_config) return false;
-    return list_contains_src(childs, packet->src);
+    return list_contains_src(childs, (linkaddr_t*)src);
 }
 
 void send_to_parent(packet_t* packet){
     unreliable_send(packet, UNICAST);
 }
 
+void send_to_childs(packet_t* packet, const linkaddr_t* src){
+    node_t* current = childs->head;
+    while(1){
+        linkaddr_copy(packet->dst, &current->mote->adress);
+        if(!linkaddr_cmp((const linkaddr_t*)&(current->mote->adress), src)) unreliable_send(packet, UNICAST);
+        if(current == childs->tail) break;
+        current = current->next;
+    }
+}
+
 void broadcast_retransmition(packet_t* packet, const linkaddr_t* src){
     // TODO: broadcast retransmit algorithm correction
     // IF no parent and no childs doesn't retransmit
-    // IF mote has same rank as this one, doesn't retransmit
-    if((parent == NULL && (!accept_childs_config || childs->head == NULL))) return;
-    else {
-        // If not received from parent retransmit to parent
-        LOG_INFO("Need to retransmit packet\n");
+    if(parent == NULL && (!accept_childs_config || childs->head == NULL)) return;
+    packet_t* packet_rly;
+    if(contains_rly(packet)) packet_rly = create_packet(packet->flags, node_rank, packet->src, packet->dst, packet->payload);
+    else packet_rly = create_packet(packet->flags+RLY, node_rank, packet->src, packet->dst, packet->payload);
+
+    // If comes to parent
+    if(parent != NULL && linkaddr_cmp(src, (const linkaddr_t*)&(parent->adress)) && accept_childs_config && childs->head != NULL){
+        send_to_childs(packet_rly, src);
+    // If comes from a child
+    }else if (list_contains_src(childs, (linkaddr_t*)src)){
+        if(parent != NULL){
+            linkaddr_copy(packet_rly->dst,  &parent->adress);
+            unreliable_send(packet_rly, UNICAST);
+        }
+        send_to_childs(packet_rly, src);
+        
     }
+    free_packet(packet_rly);
 }
+
 
 void unreliable_wait_receive(const void *data, uint16_t len,
   const linkaddr_t *src, const linkaddr_t *dest)
@@ -383,20 +399,23 @@ void unreliable_wait_receive(const void *data, uint16_t len,
     packet_t* packet = decode((char*)&encoded);
     // Discard packet IF no packet or packet firstly sent by this node or the sender node has same rank as the receiver one
     if(packet == NULL || linkaddr_cmp(packet->src, &linkaddr_node_addr) || linkaddr_cmp(src, &linkaddr_node_addr) || packet->src_rank == node_rank) {
-        free(packet);
+        free_packet(packet);
         return;
     }
     if(!linkaddr_cmp(packet->dst, &linkaddr_node_addr) && !linkaddr_cmp(packet->dst, &linkaddr_null)){
-        // redistribute to parent if no child, or to child if have one that is the correct one else (if no parent and no child corresponding)
-        // UNICAST RETRANSMISSION
+        // relay UNICAST packet to dest
+        unreliable_send(packet, UNICAST);
+        return;
     }
-    if(linkaddr_cmp(packet->dst, &linkaddr_null) && parent != NULL){
+    if(linkaddr_cmp(packet->dst, &linkaddr_node_addr)){
+        // Packet is for this node
+    }
+    if(linkaddr_cmp(packet->dst, &linkaddr_null) || contains_rly(packet)){
         // retransmit following broadcast algo
         broadcast_retransmition(packet, src);
     }
     switch_responder(packet, src, dest);
-    // node_callback(packet);
-    free(packet);
+    free_packet(packet);
 }
 
 
@@ -426,6 +445,7 @@ void setup_gateway(uint8_t rank, bool accept_child, bool need_parent, void* call
     node_rank = rank;
     node_callback = (fct_ptr)callback;
     nullnet_set_input_callback(unreliable_wait_receive);
+    discover_neighbor();
     LOG_INFO("Node setup ok\n");
 }
 
@@ -441,6 +461,6 @@ void setup_node(uint8_t rank, void* callback) {
 
 void end_net(){
     free_list(neighbors);
-    if(accept_childs_config) free(childs);
+    if(accept_childs_config) free_list(childs);
     free(parent);
 }

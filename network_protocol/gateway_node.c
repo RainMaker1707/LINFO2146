@@ -13,15 +13,15 @@
 #include "cpu/msp430/dev/uart0.h"
 
 
-#define SEND_INTERVAL (35 * CLOCK_SECOND)
+#define SEND_INTERVAL (30 * CLOCK_SECOND)
 
 PROCESS(sender_process, "Node example alive");
 PROCESS(test_serial, "Test serial");
-AUTOSTART_PROCESSES(&sender_process, &keep_alive_process, &dis_process, &test_serial);
+AUTOSTART_PROCESSES(&sender_process, &keep_alive_process);
 
 
 void callback(packet_t* packet){
-    LOG_INFO("##   GATEWAY NODE CALLBACK\n");
+    LOG_INFO("## GATEWAY NODE CALLBACK\n");
 }
 
 
@@ -58,7 +58,7 @@ PROCESS_THREAD(test_serial, ev, serv_data)
         
         PROCESS_YIELD();
         if(ev==serial_line_event_message){
-        printf("received %s from server \n", (char*) serv_data);
+            printf("received %s from server \n", (char*) serv_data);
         }
     }
   PROCESS_END();
