@@ -493,3 +493,37 @@ void end_net(){
     if(accept_childs_config) free_list(childs);
     free(parent);
 }
+
+void handle_server_response(char* data){
+    LOG_INFO("Server response: %s\n", data);
+
+    /* server sent a light start message*/
+    if (*data == 'l'){ 
+        //get char of data from index 2 to end
+        char* str_addr = malloc(strlen(data)*sizeof(char));
+        for(int i=2; i<strlen(data); i++){
+            str_addr[i-2] = data[i];
+        }
+
+        linkaddr_t* addr = char_to_linkaddr(str_addr);
+        if(addr == NULL) return;
+        LOG_INFO_LLADDR(addr);
+        LOG_INFO("\n");
+
+        // address is the one of the subgateway
+
+        // TODO Send multicast to lightbulbs
+
+        free(str_addr);
+        free(addr);
+    }
+
+    /* irrigation message*/
+    if (*data == 'i'){
+
+        LOG_INFO("Server sent irigation message\n");
+    }
+
+    
+
+}

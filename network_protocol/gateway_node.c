@@ -58,7 +58,8 @@ PROCESS_THREAD(test_serial, ev, serv_data)
         
         PROCESS_YIELD();
         if(ev==serial_line_event_message){
-            printf("received %s from server \n", (char*) serv_data);
+            handle_server_response(serv_data);
+
         }
     }
   PROCESS_END();

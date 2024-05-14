@@ -19,7 +19,8 @@ def process_data(data, sock):
         dst = str_split[3].split(" ")[1]
         payload = str_split[4].split(" ")[1]
         print(f"src: {src}, dst: {dst}, payload: {payload}\n")
-        data = f"{dst} on 5\n"
+        addr = dst.replace(".","")
+        data = f"l {addr}\n"
         sock.send(bytes(data, "utf-8"))
     elif "Server ACK" in str:
         print("ACK received from \n")
