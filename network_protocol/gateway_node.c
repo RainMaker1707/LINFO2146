@@ -30,7 +30,7 @@ PROCESS_THREAD(sender_process, ev, data)
     static struct etimer periodic_timer;
     PROCESS_BEGIN();
     
-    
+    set_device_type(GATEWAY);
     setup_gateway(GATEWAY, true, false, callback);
     etimer_set(&periodic_timer, SEND_INTERVAL);
 

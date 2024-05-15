@@ -9,6 +9,7 @@ typedef struct mote{
     int signal_strenght;
     unsigned long long last_time_heard;
     linkaddr_t src;
+    int device_type;
 } mote_t;
 
 typedef struct node {
@@ -67,6 +68,7 @@ mote_t* create_mote(int rank, const linkaddr_t* adress, int signal_strenght, con
     mote->signal_strenght = signal_strenght;
     mote->last_time_heard = clock_time();
     linkaddr_copy((linkaddr_t*)&(mote->src), src);
+    mote->device_type = -1;
     return mote;
 }
 

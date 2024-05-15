@@ -32,7 +32,7 @@ PROCESS_THREAD(sender_process, ev, data)
     static struct etimer periodic_timer;
     PROCESS_BEGIN();
     
-    
+    set_device_type(LIGHT_SENSOR);
     setup_node(SENSOR, callback);
     etimer_set(&periodic_timer, SEND_INTERVAL);
 
@@ -42,7 +42,7 @@ PROCESS_THREAD(sender_process, ev, data)
         // if(parent!=NULL) LOG_INFO_LLADDR((linkaddr_t*)&(parent->adress));
         // LOG_INFO("\n");
         print_table();
-        send_light();
+        //send_light();
         etimer_reset(&periodic_timer);
     }
     PROCESS_END();

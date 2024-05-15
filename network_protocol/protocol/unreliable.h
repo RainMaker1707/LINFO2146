@@ -28,6 +28,13 @@
 #define SENSOR 0
 #define GATEWAY_ADDR {{ 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }}
 
+/*define device types*/
+#define LIGHT_SENSOR 3
+#define IRRIGATION 4
+#define LIGHT_BULB 5
+#define MOBILE 6
+
+
 list_t* childs = NULL;
 mote_t* parent = NULL;
 list_t* neighbors = NULL;
@@ -43,7 +50,7 @@ bool accept_childs_config = false; // By default mote doesn't accept child
 bool need_parent_config = true; // By default mote accept parent;
 uint8_t node_rank = 2; // By default mote is a sensor (node)
 
-
+int device_type = -1 ;
 
 // TODO: Unicast
 
@@ -82,6 +89,7 @@ void print_table(){
     while(1){
         LOG_INFO("%d: ADD: ", counter);
         LOG_INFO_LLADDR((linkaddr_t*)&(current->mote->adress));
+        LOG_INFO(" dev type: %d", current->mote->device_type);
         LOG_INFO("\n");
         LOG_INFO("%d: SRC: ", counter++);
         LOG_INFO_LLADDR((linkaddr_t*)&(current->mote->src));
@@ -108,7 +116,10 @@ bool contains_rly(packet_t* packet){
     return flags[4] == 1;
 }
 
-
+/* call set device type when starting mote */
+void set_device_type(int type){
+    device_type = type;
+}
 
 
 // ##################### SENDER ########################
@@ -247,7 +258,11 @@ void neighbor_is_alive(packet_t* packet, const linkaddr_t* neigh_address){
         LOG_INFO("\n");
         return;
     }
+    if(neighbor->mote->device_type == -1){
+        neighbor->mote->device_type = atoi(packet->payload);
+    }
     neighbor->mote->last_time_heard = clock_time();
+    printf("Neighbor type %d is alive\n", neighbor->mote->device_type);
 }
 
 
@@ -305,9 +320,12 @@ void check_neighbors_last_time_heard(){
 }
 
 void heartbeat(){
-    packet_t *packet = create_packet(DIO, node_rank, &linkaddr_node_addr, NULL, "alive");
+    char* payload = malloc(12*sizeof(char));
+    sprintf(payload, "%d", device_type);
+    packet_t *packet = create_packet(DIO, node_rank, &linkaddr_node_addr, NULL, payload);
     unreliable_send(packet, BROADCAST);
     free_packet(packet);
+    free(payload);
 }
 
 
@@ -352,7 +370,7 @@ void switch_responder(packet_t* packet, const linkaddr_t* src, const linkaddr_t*
             prt_received(packet, src);
             break;
         case DIO:       // ALIVE SYSTEM
-            // LOG_INFO("DIO received\n");
+            LOG_INFO("DIO received\n");
             neighbor_is_alive(packet, src);
             attach_parent(packet, src);
 			break;
