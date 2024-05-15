@@ -232,7 +232,7 @@ void receive_dis(packet_t* packet, const linkaddr_t* src){
     }
     // Respond to DIS but not DIS+ACK
     if(packet->flags == DIS){ 
-        packet_t* packet_sd = create_packet(DIS+ACK, node_rank, (const linkaddr_t*)&linkaddr_node_addr, src, "DIS+ACK");
+        packet_t* packet_sd = create_packet(DIS+ACK, node_rank, (const linkaddr_t*)&linkaddr_node_addr, packet->src, "DIS+ACK");
         unreliable_send(packet_sd, UNICAST);
         free_packet(packet_sd);
     }
@@ -492,6 +492,7 @@ void setup_gateway(uint8_t rank, bool accept_child, bool need_parent, void* call
     node_rank = rank;
     node_callback = (fct_ptr)callback;
     nullnet_set_input_callback(unreliable_wait_receive);
+    clock_wait(50);
     discover_neighbor();
     LOG_INFO("Node setup ok\n");
 }
