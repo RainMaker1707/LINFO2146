@@ -186,6 +186,56 @@ void send_light(){
 }
 
 
+/*
+function for the mobile terminal that sends z maintenance messages to the light sensors
+*/
+void send_maintenance(){
+    if(neighbors->head == NULL) {
+        LOG_INFO("## NO NEIGHBORS\n");
+        return;
+    }
+    node_t* current = neighbors->head;
+    /* check if unknown devices */
+    while(1){
+        if(current->mote->device_type == -1){
+            LOG_INFO("neighbors setup not complete yet\n");
+            free(current);
+            return;
+        }
+        if(current == neighbors->tail) {
+            free(current);
+            break;
+        }
+        current = current->next;
+    }
+    current = neighbors->head;
+    /* start sending maintenance messages*/
+    while(1){
+        if(current->mote->device_type == LIGHT_SENSOR){
+            int z = 3; // Number of messages to send to each sensor
+            for (int i = 0; i < z; i++){
+                printf("maintenance message %d for ", i);
+                LOG_INFO_LLADDR((linkaddr_t*)&(current->mote->adress));
+                printf("\n");
+                 packet_t* packet = create_packet(TCP, node_rank, (const linkaddr_t*)&linkaddr_node_addr, (const linkaddr_t*)&(current->mote->adress), "mtnce");
+                unreliable_send(packet, UNICAST);
+                free_packet(packet);
+            }      
+        }
+        if(current == neighbors->tail){
+            free(current);
+            break;
+        }
+        current = current->next;
+    }
+}
+
+void ack_maintenance(packet_t* packet){
+    packet_t* ack_packet = create_packet(TCP+ACK, node_rank, (const linkaddr_t*)&linkaddr_node_addr, packet->src, "ACK mtnce");
+    unreliable_send(ack_packet, UNICAST);
+    free_packet(ack_packet);
+}
+
 // ################## PRT API ################
 
 void send_prt(const linkaddr_t* src){
@@ -262,7 +312,6 @@ void neighbor_is_alive(packet_t* packet, const linkaddr_t* neigh_address){
         neighbor->mote->device_type = atoi(packet->payload);
     }
     neighbor->mote->last_time_heard = clock_time();
-    printf("Neighbor type %d is alive\n", neighbor->mote->device_type);
 }
 
 
@@ -384,6 +433,15 @@ void switch_responder(packet_t* packet, const linkaddr_t* src, const linkaddr_t*
             receive_dis(packet, src);
             attach_parent(packet, src);
             break;
+        case TCP:       // Maintenance messages
+            LOG_INFO("TCP received\n");
+            ack_maintenance(packet);
+            break;
+        case TCP+ACK:   // Ack maintenance
+            LOG_INFO("TCP+ACK received from ");
+            LOG_INFO_LLADDR(packet->src);
+            LOG_INFO("\n");
+            break;
         default:
             LOG_INFO("No flags recognized %d\n", packet->flags);
             break;
@@ -451,6 +509,7 @@ void unreliable_wait_receive(const void *data, uint16_t len,
     }
     if(!linkaddr_cmp(packet->dst, &linkaddr_node_addr) && !linkaddr_cmp(packet->dst, &linkaddr_null)){
         // relay UNICAST packet to dest
+        packet->src_rank = node_rank;
         unreliable_send(packet, UNICAST);
         return;
     }
