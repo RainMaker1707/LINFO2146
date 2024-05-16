@@ -264,7 +264,7 @@ void multicast_message(packet_t* packet){
     // check multicast payload to send message to corresponding sensors
     if(strcmp(packet->payload, "light") == 0){ 
         printf("multicast message to light bulb\n");
-        multicast_send(packet, LIGHT_SENSOR, "light");
+        multicast_send(packet, LIGHT_BULB, "light"); 
         return;
     }
     else if(strcmp(packet->payload, "irrigation") == 0){
