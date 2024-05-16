@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
 
 #include "contiki.h"
 #include "net/nullnet/nullnet.h"
@@ -236,6 +237,45 @@ void ack_maintenance(packet_t* packet){
     free_packet(ack_packet);
 }
 
+/* loop through neighbors and send unicast packet to them */
+void multicast_send(packet_t* packet ,int type, char* payload){
+    node_t* current = neighbors->head;
+    while(1){
+        if(current->mote->device_type == type){
+            printf("send mult\n");
+            LOG_INFO_LLADDR((linkaddr_t*)&(current->mote->adress));
+            printf(" - ");
+            LOG_INFO_LLADDR(packet->src);
+            printf("\n");
+            packet_t* packet_mlt = create_packet(UDP, node_rank, packet->src, (const linkaddr_t*)&(current->mote->adress), "a");
+            unreliable_send(packet_mlt, UNICAST);
+            free_packet(packet_mlt);
+        }else{
+            printf("not send mult\n");
+            printf(" curr = %d and type %d\n", current->mote->device_type, type);
+        }
+        if(current == neighbors->tail) break;
+        current = current->next;
+    }
+    free(current);
+}
+
+void multicast_message(packet_t* packet){
+    // check multicast payload to send message to corresponding sensors
+    if(strcmp(packet->payload, "light") == 0){ 
+        printf("multicast message to light bulb\n");
+        multicast_send(packet, LIGHT_SENSOR, "light");
+        return;
+    }
+    else if(strcmp(packet->payload, "irrigation") == 0){
+        printf("multicast message to irrigation\n");
+        multicast_send(packet, IRRIGATION, "irrigation");
+    } 
+}
+
+
+
+
 // ################## PRT API ################
 
 void send_prt(const linkaddr_t* src){
@@ -412,6 +452,7 @@ void switch_responder(packet_t* packet, const linkaddr_t* src, const linkaddr_t*
                 LOG_INFO("Payload: %s\n", packet->payload);
                 LOG_INFO("\n");
             }
+
             node_callback(packet);
             break;
         case PRT:       // ASK FOR PARENTING
@@ -441,6 +482,10 @@ void switch_responder(packet_t* packet, const linkaddr_t* src, const linkaddr_t*
             LOG_INFO("TCP+ACK received from ");
             LOG_INFO_LLADDR(packet->src);
             LOG_INFO("\n");
+            break;
+        case MLT:       // Multicast from server
+            LOG_INFO("MLT received\n");
+            multicast_message(packet);
             break;
         default:
             LOG_INFO("No flags recognized %d\n", packet->flags);
@@ -504,16 +549,19 @@ void unreliable_wait_receive(const void *data, uint16_t len,
     packet_t* packet = decode((char*)&encoded);
     // Discard packet IF no packet or packet firstly sent by this node or the sender node has same rank as the receiver one
     if(packet == NULL || linkaddr_cmp(packet->src, &linkaddr_node_addr) || linkaddr_cmp(src, &linkaddr_node_addr) || packet->src_rank == node_rank) {
+        printf("Packet discarded\n");
         free_packet(packet);
         return;
     }
     if(!linkaddr_cmp(packet->dst, &linkaddr_node_addr) && !linkaddr_cmp(packet->dst, &linkaddr_null)){
         // relay UNICAST packet to dest
+        printf("Relay packet\n");
         packet->src_rank = node_rank;
         unreliable_send(packet, UNICAST);
         return;
     }
     if(linkaddr_cmp(packet->dst, &linkaddr_node_addr)){
+        printf("Packet for this node\n");
         // Packet is for this node
     }
     if(linkaddr_cmp(packet->dst, &linkaddr_null) || contains_rly(packet)){
@@ -572,12 +620,23 @@ void end_net(){
     free(parent);
 }
 
+
+/*
+function for the gateway to handle the server messages (called in gateway_node.c)
+*/
 void handle_server_response(char* data){
     LOG_INFO("Server response: %s\n", data);
 
     /* server sent a light start message*/
+    /*
+    current server_test.py response is "l address" like "l 0200000000000000"
+    and the address is the one of the subgateway that provided the light sensor message to the gateway
+
+    */
     if (*data == 'l'){ 
-        //get char of data from index 2 to end
+        
+
+        //transform char to address
         char* str_addr = malloc(strlen(data)*sizeof(char));
         for(int i=2; i<strlen(data); i++){
             str_addr[i-2] = data[i];
@@ -585,23 +644,31 @@ void handle_server_response(char* data){
 
         linkaddr_t* addr = char_to_linkaddr(str_addr);
         if(addr == NULL) return;
-        LOG_INFO_LLADDR(addr);
-        LOG_INFO("\n");
 
-        // address is the one of the subgateway
-
-        // TODO Send multicast to lightbulbs
+        //create a packet type MLT and send it to the subgateway (addr)
+        packet_t* packet = create_packet(MLT, node_rank, (const linkaddr_t*)&linkaddr_node_addr, addr, "light");
+        unreliable_send(packet, UNICAST);
+        free_packet(packet);
 
         free(str_addr);
-        free(addr);
     }
 
-    /* irrigation message*/
+    /* irrigation message from server */
     if (*data == 'i'){
 
         LOG_INFO("Server sent irigation message\n");
+        //TODO implem
+
+        /* idea :*/
+        node_t* current = neighbors->head;
+        while(1){
+            if(current->mote->device_type==SUBGATEWAY){
+                packet_t* packet = create_packet(MLT, node_rank, (const linkaddr_t*)&linkaddr_node_addr, (const linkaddr_t*)&(current->mote->adress), "irrigation");
+                unreliable_send(packet, UNICAST);
+                free_packet(packet);
+            }
+            if(current == neighbors->tail) break;
+            current = current->next;
+        }
     }
-
-    
-
 }

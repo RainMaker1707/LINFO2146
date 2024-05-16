@@ -1,5 +1,5 @@
-#define TCP  128    // NOT USED
-#define MLT  64     // NOT USED
+#define TCP  128    // mobile terminal maintenance messages
+#define MLT  64     // multicast from server
 #define ACK  32     // ACKNOWLEDGED / OK
 #define NACK 16     // NOT ACKNOWLEDGED / NOT OK
 #define RLY  8      // RELAY broadcasted packet (RESERVED)
