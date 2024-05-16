@@ -1,5 +1,7 @@
 #include "packet.h"
 
+
+
 // ######################### API ########################################
 
 
@@ -9,21 +11,25 @@
     The checksum will ensure the packet has not been corrupted while the transportation.
     @Params: flags int array, len 8, if flags[i]<0 throw error, else if flags[i] == 0 then bit[i] == 0, else bit[i] == 1 and then flag is set 
                         [TCP, SYN, ACK, NACK, RST, FIN, DIS, PRT]
-    @Param: packet_number
+    @Param: src_rank
     @Param: source_ip
     @Param: dest_ip
     @Param: payload
     @Returns: packet_t containing all the information OR reject the packet and return NULL
 */
-packet_t* create_packet(uint8_t flags, uint8_t packet_number, char* source_ip, char* dest_ip, char* payload){
+packet_t* create_packet(uint8_t type,uint8_t flags, uint8_t src_rank, const linkaddr_t* source_ip, const linkaddr_t* dest_ip, char* payload){
     packet_t* packet = malloc(sizeof(packet_t));
-    packet->version = VERSION;
+    packet->type = type;
     packet->flags = flags;
-    packet->packet_number = packet_number;
-    packet->src = source_ip;
-    packet->dst = dest_ip;
+    packet->src_rank = src_rank;
+    packet->src = malloc(sizeof(linkaddr_t));
+    packet->dst = malloc(sizeof(linkaddr_t));
+    linkaddr_copy(packet->src, source_ip);
+    if(dest_ip == NULL) linkaddr_copy(packet->dst, &linkaddr_null);
+    else linkaddr_copy(packet->dst, dest_ip);
     packet->checksum = compute_checksum(packet); // TODO, for now 1byte at 1
     packet->payload = payload;
+    strncpy(packet->payload, payload, PACKET_PAYLOAD_MAX_LEN);
     return packet;
 }
 
@@ -76,17 +82,13 @@ reader_t* check_read_packet(packet_t* packet) {
 */
 char* encode(packet_t* packet){
     char* buffer = malloc(sizeof(char)*PACKET_SIZE);
-    buffer[0] = VERSION;
+    buffer[0] = packet->type;
     buffer[1] = packet->flags;
-    buffer[2] = packet->packet_number;
+    buffer[2] = packet->src_rank;
     buffer[3] = packet->checksum;
-    for(int i = 0; i<16; i++){
-        buffer[4+i] = packet->src[i];
-        if(packet->dst != NULL) buffer[20+i] = packet->dst[i];
-    }
-    for(int i = 0; i<12; i++){
-        buffer[36+i] = packet->payload[i];
-    }
+    memcpy(&buffer[4], packet->src, ADDR_LEN);
+    memcpy(&buffer[12], packet->dst, ADDR_LEN);
+    memcpy(&buffer[20], packet->payload, 12);
     return buffer;
 }
 
@@ -96,31 +98,28 @@ char* encode(packet_t* packet){
 */
 packet_t* decode(char* buffer){
     packet_t* packet = malloc(sizeof(packet_t));
-    packet->version = buffer[0];
+    packet->type = buffer[0];
     packet->flags = buffer[1];
-    packet->packet_number = buffer[2];
+    packet->src_rank = buffer[2];
     packet->checksum = buffer[3];
     packet->src = malloc(16*sizeof(char));
     packet->dst = malloc(16*sizeof(char));
-    for(int i = 0; i<16; i++){
-        packet->src[i] = buffer[4+i];
-        packet->dst[i] = buffer[20+i];
-    }
+    memcpy(packet->src, (const linkaddr_t*)&(buffer[4]), 8);
+    memcpy(packet->dst, (const linkaddr_t*)&(buffer[12]), 8);
     packet->payload = malloc(12*sizeof(char));
     for(int i = 0; i<12; i++){
-        packet->payload[i] = buffer[36+i];
+        packet->payload[i] = buffer[20+i];
     }
     return packet;
 }
 
 
 /*
-    As the packet contains malloced char* you need to free it from this function
+    As the packet contains malloced memory you need to free it from this function
 */
 void free_packet(packet_t* packet){
     free(packet->src);
     free(packet->dst);
-    free(packet->payload);
     free(packet);
 }
 
@@ -129,22 +128,42 @@ void free_packet(packet_t* packet){
     Retrieve the list of flags from the raw uint8_t
     @Param: packet_t* packet: the decoded packet you want to read
     @Returns: uint8_t* to a uint8_t array of 8 elements
-                [TCP, SYN, ACK, NACK, RST, FIN, DIS, PRT]
+                [TCP, MLT, ACK, NACK, RLY, DIO, DIS, PRT]
                 [0, 0, 0, 0, 0, 0, 0, 0] == UDP
-                [1, 1, 1, 0, 0 ,0 ,0 ,0] == TCP SYN ACK
+                [1, 1, 1, 0, 0 ,0 ,0 ,0] == TCP MLT ACK
 */
 uint8_t* retrieve_flags(packet_t* packet){
     uint8_t* flags = malloc(8*sizeof(uint8_t));
+    uint8_t flags_tmp = packet->flags;
     int idx = 0;
     for(int i = 128; i>=1; i=i/2){
-        if(packet->flags >= i) {
-            packet->flags -= i;
+        if(flags_tmp >= i) {
+            flags_tmp -= i;
             flags[idx] = 1;
         }
         idx++;
     }
     return flags;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Maybe remove these 
 
 
 /*

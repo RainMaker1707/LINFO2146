@@ -6,11 +6,11 @@
 #include "net/nullnet/nullnet.h"
 #include "net/netstack.h"
 #include "sys/log.h"
-#include "utils/flags.h"
-#include "protocol/unreliable.h"
 
 
-//#define DIS_INTERVAL (30 * CLOCK_SECOND)
+#include "receiver.h"
+
+
 #define ALIVE_INTERVAL (20 * CLOCK_SECOND)
 
 PROCESS(keep_alive_process, "alive process");
