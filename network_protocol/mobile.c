@@ -23,7 +23,9 @@ AUTOSTART_PROCESSES(&mobile_process, &keep_alive_process);
 
 
 void callback(packet_t* packet){
-    LOG_INFO("NODE CALLBACK \n");
+    LOG_INFO("Received ack for maintenance message from ");
+    LOG_INFO_LLADDR(packet->src);
+    LOG_INFO("\n");
 }
 
 

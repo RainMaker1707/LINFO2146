@@ -122,6 +122,16 @@ void set_device_type(int type){
     device_type = type;
 }
 
+void log_server(packet_t* packet, const linkaddr_t* src){
+    LOG_INFO("Server log");
+    LOG_INFO("light: ");
+    LOG_INFO_LLADDR(packet->src);
+    LOG_INFO("from: ");
+    LOG_INFO_LLADDR(src);
+    LOG_INFO("Payload: %s\n", packet->payload);
+    LOG_INFO("\n");
+}
+
 
 // ##################### SENDER ########################
 
@@ -232,27 +242,24 @@ void send_maintenance(){
 }
 
 void ack_maintenance(packet_t* packet){
-    packet_t* ack_packet = create_packet(TCP+ACK, node_rank, (const linkaddr_t*)&linkaddr_node_addr, packet->src, "ACK mtnce");
+    packet_t* ack_packet = create_packet(TCP+ACK, node_rank, (const linkaddr_t*)&linkaddr_node_addr, packet->src, "ACK");
     unreliable_send(ack_packet, UNICAST);
     free_packet(ack_packet);
 }
 
 /* loop through neighbors and send unicast packet to them */
-void multicast_send(packet_t* packet ,int type, char* payload){
+void multicast_send(packet_t* packet ,int type, char* payload, int flag){
     node_t* current = neighbors->head;
     while(1){
         if(current->mote->device_type == type){
-            printf("send mult\n");
+            /*printf("send mult to \n");
             LOG_INFO_LLADDR((linkaddr_t*)&(current->mote->adress));
-            printf(" - ");
+            printf(" - from ");
             LOG_INFO_LLADDR(packet->src);
-            printf("\n");
-            packet_t* packet_mlt = create_packet(UDP, node_rank, packet->src, (const linkaddr_t*)&(current->mote->adress), "a");
+            printf("\n");*/
+            packet_t* packet_mlt = create_packet(flag, node_rank, packet->src, (const linkaddr_t*)&(current->mote->adress), payload);
             unreliable_send(packet_mlt, UNICAST);
             free_packet(packet_mlt);
-        }else{
-            printf("not send mult\n");
-            printf(" curr = %d and type %d\n", current->mote->device_type, type);
         }
         if(current == neighbors->tail) break;
         current = current->next;
@@ -261,16 +268,19 @@ void multicast_send(packet_t* packet ,int type, char* payload){
 }
 
 void multicast_message(packet_t* packet){
+    char* new_payload = malloc(12*sizeof(char));
     // check multicast payload to send message to corresponding sensors
-    if(strcmp(packet->payload, "light") == 0){ 
-        printf("multicast message to light bulb\n");
-        multicast_send(packet, LIGHT_BULB, "light"); 
-        return;
+    if(*packet->payload == 'L'){ 
+        sprintf(new_payload, "%c", (char)packet->payload[1]);
+        multicast_send(packet, LIGHT_BULB, new_payload, UDP); 
     }
-    else if(strcmp(packet->payload, "irrigation") == 0){
-        printf("multicast message to irrigation\n");
-        multicast_send(packet, IRRIGATION, "irrigation");
+    else if(*packet->payload ==  'I'){
+        
+        sprintf(new_payload, "%c", (char)packet->payload[1]);
+        multicast_send(packet, IRRIGATION,new_payload, TCP);
+        
     } 
+    free(new_payload);
 }
 
 
@@ -440,51 +450,54 @@ void switch_responder(packet_t* packet, const linkaddr_t* src, const linkaddr_t*
     switch(packet->flags){
         case UDP:
             // GIVE PACKET TO USER (MOTE).
-            LOG_INFO("UDP received\n");
+            //LOG_INFO("UDP received\n");
 
-            /* LOG TO THE SERVER (do not delete)*/
+            /* LOG TO THE SERVER*/
             if(node_rank == GATEWAY){ 
-                LOG_INFO("Server log");
-                LOG_INFO("light: ");
-                LOG_INFO_LLADDR(packet->src);
-                LOG_INFO("from: ");
-                LOG_INFO_LLADDR(src);
-                LOG_INFO("Payload: %s\n", packet->payload);
-                LOG_INFO("\n");
+                log_server(packet, src);
             }
+
 
             node_callback(packet);
             break;
         case PRT:       // ASK FOR PARENTING
-            LOG_INFO("PRT received\n");
+            //LOG_INFO("PRT received\n");
             prt_received(packet, src);
             break;
         case DIO:       // ALIVE SYSTEM
-            LOG_INFO("DIO received\n");
+            //LOG_INFO("DIO received\n");
             neighbor_is_alive(packet, src);
             attach_parent(packet, src);
 			break;
         case DIS:       // DISCOVER SYSTEM
-            LOG_INFO("DIS received\n");
+            //LOG_INFO("DIS received\n");
             receive_dis(packet, src);
             attach_parent(packet, src);
             break;
         case DIS+ACK:   // DISCOVER SYSTEM
-            LOG_INFO("DIS+ACK received\n");
+            //LOG_INFO("DIS+ACK received\n");
             receive_dis(packet, src);
             attach_parent(packet, src);
             break;
         case TCP:       // Maintenance messages
-            LOG_INFO("TCP received\n");
+            //LOG_INFO("TCP received\n");
             ack_maintenance(packet);
+            node_callback(packet);
             break;
         case TCP+ACK:   // Ack maintenance
-            LOG_INFO("TCP+ACK received from ");
+            /*LOG_INFO("TCP+ACK received from ");
             LOG_INFO_LLADDR(packet->src);
-            LOG_INFO("\n");
+            LOG_INFO("\n");*/
+
+            /* LOG TO THE SERVER*/
+            if(node_rank == GATEWAY){ 
+                log_server(packet, src);
+            }
+
+            node_callback(packet);
             break;
         case MLT:       // Multicast from server
-            LOG_INFO("MLT received\n");
+            //LOG_INFO("MLT received\n");
             multicast_message(packet);
             break;
         default:
@@ -549,19 +562,16 @@ void unreliable_wait_receive(const void *data, uint16_t len,
     packet_t* packet = decode((char*)&encoded);
     // Discard packet IF no packet or packet firstly sent by this node or the sender node has same rank as the receiver one
     if(packet == NULL || linkaddr_cmp(packet->src, &linkaddr_node_addr) || linkaddr_cmp(src, &linkaddr_node_addr) || packet->src_rank == node_rank) {
-        printf("Packet discarded\n");
         free_packet(packet);
         return;
     }
     if(!linkaddr_cmp(packet->dst, &linkaddr_node_addr) && !linkaddr_cmp(packet->dst, &linkaddr_null)){
         // relay UNICAST packet to dest
-        printf("Relay packet\n");
         packet->src_rank = node_rank;
         unreliable_send(packet, UNICAST);
         return;
     }
     if(linkaddr_cmp(packet->dst, &linkaddr_node_addr)){
-        printf("Packet for this node\n");
         // Packet is for this node
     }
     if(linkaddr_cmp(packet->dst, &linkaddr_null) || contains_rly(packet)){
@@ -625,7 +635,7 @@ void end_net(){
 function for the gateway to handle the server messages (called in gateway_node.c)
 */
 void handle_server_response(char* data){
-    LOG_INFO("Server response: %s\n", data);
+    LOG_INFO("Server message: %s\n", data);
 
     /* server sent a light start message*/
     /*
@@ -633,42 +643,43 @@ void handle_server_response(char* data){
     and the address is the one of the subgateway that provided the light sensor message to the gateway
 
     */
-    if (*data == 'l'){ 
+    if (*data == 'L'){ 
         
 
         //transform char to address
         char* str_addr = malloc(strlen(data)*sizeof(char));
-        for(int i=2; i<strlen(data); i++){
+        for(int i=2; i<18; i++){
             str_addr[i-2] = data[i];
         }
 
         linkaddr_t* addr = char_to_linkaddr(str_addr);
         if(addr == NULL) return;
-
+        char* payload = malloc(12*sizeof(char));
+        sprintf(payload, "L%c", (char)data[19]);
         //create a packet type MLT and send it to the subgateway (addr)
-        packet_t* packet = create_packet(MLT, node_rank, (const linkaddr_t*)&linkaddr_node_addr, addr, "light");
+        packet_t* packet = create_packet(MLT, node_rank, (const linkaddr_t*)&linkaddr_node_addr, addr, payload);
         unreliable_send(packet, UNICAST);
         free_packet(packet);
 
         free(str_addr);
+        free(payload);
     }
 
     /* irrigation message from server */
-    if (*data == 'i'){
+    if (*data == 'I'){
 
-        LOG_INFO("Server sent irigation message\n");
-        //TODO implem
-
-        /* idea :*/
+        char* payload = malloc(12*sizeof(char));
+        sprintf(payload, "I%c", (char)data[2]);
         node_t* current = neighbors->head;
         while(1){
             if(current->mote->device_type==SUBGATEWAY){
-                packet_t* packet = create_packet(MLT, node_rank, (const linkaddr_t*)&linkaddr_node_addr, (const linkaddr_t*)&(current->mote->adress), "irrigation");
+                packet_t* packet = create_packet(MLT, node_rank, (const linkaddr_t*)&linkaddr_node_addr, (const linkaddr_t*)&(current->mote->adress), payload);
                 unreliable_send(packet, UNICAST);
                 free_packet(packet);
             }
             if(current == neighbors->tail) break;
             current = current->next;
         }
+        free(payload);
     }
 }

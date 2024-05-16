@@ -2,10 +2,6 @@
 #include <stdio.h> 
 #include <stdlib.h>
 
-#include <string.h>
-#include <stdio.h> 
-#include <stdlib.h>
-
 #include "contiki.h"
 #include "net/nullnet/nullnet.h"
 #include "net/netstack.h"
@@ -17,33 +13,34 @@
 
 #define SEND_INTERVAL (30 * CLOCK_SECOND)
 
-PROCESS(light_bulb, "Light Bulb");
-AUTOSTART_PROCESSES(&light_bulb, &keep_alive_process);
+# define RANK 1
+
+PROCESS(subgateway, "subgateway");
+AUTOSTART_PROCESSES(&subgateway, &keep_alive_process);
 
 
 
 void callback(packet_t* packet){
-
-    LOG_INFO("Received light on command. Turning on for %s minute(s).\n", packet->payload);
+    LOG_INFO("##  subgateway CALLBACK\n");
 }
 
 
-PROCESS_THREAD(light_bulb, ev, data)
+PROCESS_THREAD(subgateway, ev, data)
 {
     static struct etimer periodic_timer;
     PROCESS_BEGIN();
     
-    set_device_type(LIGHT_BULB);
-    setup_node(SENSOR, callback);
+    set_device_type(SUBGATEWAY);
+    setup_subgateway(SUBGATEWAY, true, callback);
     etimer_set(&periodic_timer, SEND_INTERVAL);
 
     while(1) {
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
+        // LOG_INFO("SG PARENT: ");
+        // if(parent!=NULL) LOG_INFO_LLADDR((linkaddr_t*)&(parent->adress));
+        // LOG_INFO("\n");
         print_table();
         etimer_reset(&periodic_timer);
     }
     PROCESS_END();
 }
-
-
-

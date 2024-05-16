@@ -17,33 +17,34 @@
 
 #define SEND_INTERVAL (30 * CLOCK_SECOND)
 
-PROCESS(light_bulb, "Light Bulb");
-AUTOSTART_PROCESSES(&light_bulb, &keep_alive_process);
+PROCESS(sender_process, "light sensor");
+AUTOSTART_PROCESSES(&sender_process, &keep_alive_process);
 
 
 
 void callback(packet_t* packet){
-
-    LOG_INFO("Received light on command. Turning on for %s minute(s).\n", packet->payload);
+    LOG_INFO("Received a maintenance message\n");
 }
 
 
-PROCESS_THREAD(light_bulb, ev, data)
+PROCESS_THREAD(sender_process, ev, data)
 {
     static struct etimer periodic_timer;
     PROCESS_BEGIN();
     
-    set_device_type(LIGHT_BULB);
+    set_device_type(LIGHT_SENSOR);
     setup_node(SENSOR, callback);
     etimer_set(&periodic_timer, SEND_INTERVAL);
 
     while(1) {
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
+        // LOG_INFO("PARENT: ");
+        // if(parent!=NULL) LOG_INFO_LLADDR((linkaddr_t*)&(parent->adress));
+        // LOG_INFO("\n");
         print_table();
+        send_light();
         etimer_reset(&periodic_timer);
     }
     PROCESS_END();
 }
-
-
 

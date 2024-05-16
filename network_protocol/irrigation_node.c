@@ -17,23 +17,23 @@
 
 #define SEND_INTERVAL (30 * CLOCK_SECOND)
 
-PROCESS(light_bulb, "Light Bulb");
-AUTOSTART_PROCESSES(&light_bulb, &keep_alive_process);
+PROCESS(irrigation_system, "irrigation system");
+AUTOSTART_PROCESSES(&irrigation_system, &keep_alive_process);
 
 
 
 void callback(packet_t* packet){
 
-    LOG_INFO("Received light on command. Turning on for %s minute(s).\n", packet->payload);
+    LOG_INFO("Command start irrigation for %s minute(s) \n", packet->payload);
 }
 
 
-PROCESS_THREAD(light_bulb, ev, data)
+PROCESS_THREAD(irrigation_system, ev, data)
 {
     static struct etimer periodic_timer;
     PROCESS_BEGIN();
     
-    set_device_type(LIGHT_BULB);
+    set_device_type(IRRIGATION);
     setup_node(SENSOR, callback);
     etimer_set(&periodic_timer, SEND_INTERVAL);
 

@@ -18,7 +18,13 @@ PROCESS(keep_alive_process, "alive process");
 
 PROCESS_THREAD(keep_alive_process, ev, data){
     static struct etimer periodic_timer;
+    static struct etimer start_time; 
     PROCESS_BEGIN();
+
+    etimer_set(&start_time, 4*CLOCK_SECOND);
+    PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&start_time));
+    check_neighbors_last_time_heard();
+    heartbeat();
     etimer_set(&periodic_timer, ALIVE_INTERVAL);
 
     while(1) {
