@@ -1,13 +1,46 @@
+#pragma once
+
+#include <stdlib.h>
+#include <stdbool.h>
+
+#include "contiki.h"
+#include "net/nullnet/nullnet.h"
+#include "net/netstack.h"
+#include "sys/log.h"
+
 #include "sender.h"
+
+#include "protocol/alive.h"
+
+#include "utils/packet.h"
+#include "utils/net_list.h"
+
+
+
+#define PACKET_MAX_LEN PACKET_SIZE           // packet are 32 bytes max
+
+
+typedef void (*fct_ptr)(packet_t* packet);
 
 
 /*
 */
 void switch_response(packet_t* packet);
 
+
 /*
 */
 void receive(const void *data, uint16_t len, const linkaddr_t *src, const linkaddr_t *dest);
+
+
+/*
+*/
+uint8_t get_rank();
+
+
+/*
+*/
+fct_ptr get_callback();
 
 
 

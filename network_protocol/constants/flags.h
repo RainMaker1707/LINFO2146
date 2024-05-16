@@ -1,3 +1,5 @@
+#pragma once
+
 #define MBL  128    // NOT USED
 #define MLT  64     // NOT USED
 #define ACK  32     // ACKNOWLEDGED / OK

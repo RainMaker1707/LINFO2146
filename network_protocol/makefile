@@ -1,13 +1,13 @@
 CONTIKI_PROJECT = node
 CONTIKI = ../..
 
-PROJECT_SOURCEFILES += utils/packet.c utils/net_list.c api/receiver.c api/sender.c protocol/alive.c protocol/discover.c protocol/unicast.c
+PROJECT_SOURCEFILES += utils/packet.c utils/net_list.c net_api/receiver.c net_api/sender.c protocol/alive.c
 
 all: $(CONTIKI_PROJECT)
 
 $(shell mkdir -p build/z1/obj/utils)
 $(shell mkdir -p build/z1/obj/protocol)
-$(shell mkdir -p build/z1/obj/api)
+$(shell mkdir -p build/z1/obj/net_api)
 
 MAKE_NET = MAKE_NET_NULLNET
 include $(CONTIKI)/Makefile.include

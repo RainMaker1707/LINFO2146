@@ -1,7 +1,9 @@
 #include "sender.h"
 
+#include "../constants/constant.h"
+
 void unreliable_send(const linkaddr_t* dest, uint8_t* buffer){
-    //nullnet_len = PACKET_SIZE;
+    nullnet_len = PACKET_SIZE;
     memcpy(nullnet_buf, buffer, PACKET_SIZE);  // Use nullnet_buf directly
     NETSTACK_NETWORK.output(dest);
     

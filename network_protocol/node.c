@@ -12,7 +12,9 @@
 #include "sys/log.h"
 
 
-#include "api/receiver.h"
+#include "net_api/net_process.h"
+
+#include "constants/constant.h"
 
 
 #define SEND_INTERVAL (31 * CLOCK_SECOND)

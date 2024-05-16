@@ -1,7 +1,6 @@
 #include "receiver.h"
 
 
-
 list_t* childs = NULL;
 mote_t* parent = NULL;
 list_t* neighbors = NULL;
@@ -10,9 +9,8 @@ bool accept_childs_config = false; // By default mote doesn't accept child
 bool need_parent_config = true; // By default mote accept parent;
 uint8_t node_rank = 2; // By default mote is a sensor (node)
 
-
-typedef void (*fct_ptr)(packet_t* packet);
 fct_ptr node_callback;
+
 
 
 void switch_response(packet_t* packet){
@@ -40,15 +38,18 @@ void switch_response(packet_t* packet){
 void receive(const void *data, uint16_t len, const linkaddr_t *src, const linkaddr_t *dest){
     printf("PACKET RECEIVED\n");
     packet_t* packet = decode((char*)data);
-    //if(packet == NULL) return;
-    //if(!linkaddr_cmp(packet->dst, &linkaddr_node_addr) && !linkaddr_cmp(packet->dst, &linkaddr_null)) return;
+    if(packet == NULL) return;
+    if(!linkaddr_cmp(packet->dst, &linkaddr_node_addr) && !linkaddr_cmp(packet->dst, &linkaddr_null)) return;
     switch_response(packet);
     free_packet(packet);
 }
 
-void setup(uint8_t rank, bool accept_child, bool need_parent, void* callback){
-    
-    
+fct_ptr get_callback(){
+    return node_callback;
+}
+
+uint8_t get_rank(){
+    return node_rank;
 }
 
 

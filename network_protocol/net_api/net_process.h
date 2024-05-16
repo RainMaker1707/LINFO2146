@@ -1,14 +1,7 @@
-#include <string.h>
-#include <stdio.h> 
-#include <stdlib.h>
-
-#include "contiki.h"
-#include "net/nullnet/nullnet.h"
-#include "net/netstack.h"
-#include "sys/log.h"
-
+#pragma once
 
 #include "receiver.h"
+#include "sender.h"
 
 
 #define ALIVE_INTERVAL (20 * CLOCK_SECOND)
@@ -23,8 +16,7 @@ PROCESS_THREAD(keep_alive_process, ev, data){
 
     while(1) {
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
-        check_neighbors_last_time_heard();
-        heartbeat();
+        heartbeat(get_rank());
         etimer_reset(&periodic_timer);
     }
     PROCESS_END();
