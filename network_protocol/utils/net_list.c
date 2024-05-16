@@ -41,8 +41,9 @@ void free_list(list_t* list){
     free(list);
 }
 
-mote_t* create_mote(int rank, const linkaddr_t* adress, int signal_strenght, const linkaddr_t* src){
+mote_t* create_mote(int type, int rank, const linkaddr_t* adress, int signal_strenght, const linkaddr_t* src){
     mote_t* mote = malloc(sizeof(mote_t));
+    mote->type = type;
     mote->rank = rank;
     linkaddr_copy((linkaddr_t*)&(mote->adress), adress);
     mote->signal_strenght = signal_strenght;

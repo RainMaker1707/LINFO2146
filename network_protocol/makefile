@@ -1,7 +1,7 @@
 CONTIKI_PROJECT = node
 CONTIKI = ../..
 
-PROJECT_SOURCEFILES += utils/packet.c utils/net_list.c net_api/receiver.c net_api/sender.c protocol/alive.c
+PROJECT_SOURCEFILES += utils/packet.c utils/net_list.c net_api/receiver.c net_api/sender.c net_api/setup.c protocol/alive.c protocol/discover.c
 
 all: $(CONTIKI_PROJECT)
 

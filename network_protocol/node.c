@@ -14,13 +14,16 @@
 
 #include "net_api/net_process.h"
 
+#include "net_api/setup.h"
+
 #include "constants/constant.h"
+#include "constants/types.h"
 
 
-#define SEND_INTERVAL (31 * CLOCK_SECOND)
+#define SEND_INTERVAL (60 * CLOCK_SECOND)
 
 PROCESS(sender_process, "Node example alive");
-AUTOSTART_PROCESSES(&sender_process);
+AUTOSTART_PROCESSES(&sender_process, &keep_alive, &discover_process);
 
 
 
@@ -35,18 +38,14 @@ PROCESS_THREAD(sender_process, ev, data)
     PROCESS_BEGIN();
     
     
-    setup_node(SENSOR, callback);
+    setup_node(TYPE_BULB, SENSOR, callback);
 
     etimer_set(&periodic_timer, SEND_INTERVAL);
 
     while(1) {
         
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
-        LOG_INFO("PREPARE PACKET\n");
-        packet_t* packet = create_packet(TYPE_BULB, UDP, SENSOR, &linkaddr_node_addr, &linkaddr_null, "DISCOVER");
-        send(packet, BROADCAST);
-        LOG_INFO("PACKET SENT\n");
-        free_packet(packet);
+        LOG_INFO("ALL OK\n");
         etimer_reset(&periodic_timer);
     }
     PROCESS_END();
