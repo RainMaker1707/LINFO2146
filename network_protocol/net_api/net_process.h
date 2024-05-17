@@ -6,7 +6,7 @@
 
 #define CLOCK_MINUTE (60 * CLOCK_SECOND)
 #define DISCOVER_INTERVAL (5 * CLOCK_MINUTE)
-#define ALIVE_INTERVAL (20 * CLOCK_SECOND)
+#define ALIVE_INTERVAL (15 * CLOCK_SECOND)
 
 
 PROCESS(discover_process, "discover process");

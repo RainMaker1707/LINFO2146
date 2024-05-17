@@ -16,7 +16,7 @@
 #include "sys/log.h"
 
 
-#define MAX_DELAY_ALIVE 60
+#define MAX_DELAY_ALIVE 20
 
 void heartbeat(int rank);
 

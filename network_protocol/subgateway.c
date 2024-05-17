@@ -46,7 +46,7 @@ PROCESS_THREAD(sender_process, ev, data)
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
         LOG_INFO("PARENT: ");
         if(get_parent() != NULL) LOG_INFO_LLADDR((linkaddr_t*)&(get_parent()->adress));
-        LOG_INFO("\n");
+        printf("\n");
         etimer_reset(&periodic_timer);
     }
     PROCESS_END();

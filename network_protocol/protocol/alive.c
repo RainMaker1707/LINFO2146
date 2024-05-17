@@ -5,7 +5,7 @@
 
 
 void heartbeat(int rank){
-    packet_t* packet = create_packet(TYPE_BULB, DIO, rank, &linkaddr_node_addr, NULL, "ALIVE");
+    packet_t* packet = create_packet(get_type(), DIO, get_rank(), &linkaddr_node_addr, NULL, "ALIVE");
     send(packet, BROADCAST);
     free_packet(packet);
 }
@@ -34,14 +34,7 @@ void alive(packet_t* packet){
         neigh->mote->signal_strenght = rssi;
         // SEND PRT to new parent concurrent
         if(get_parent_config()){
-            if(get_parent() == NULL
-            || (get_parent()->signal_strenght < rssi && get_parent()->rank == packet->src_rank) 
-            || packet->src_rank == get_parent()->rank+1
-            )
-        {
-            printf("SEND PRT\n");
-            send_prt(packet->src);
-        }
+            attach_parent(packet, packet->src);
         }
     }
 }

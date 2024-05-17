@@ -4,10 +4,11 @@
 #define TYPE_SUBGATEWAY 64
 
 #define TYPE_TODEFINE2 32
-#define TYPE_TODEFINE3 16
-#define TYPE_TODEFINE4 8
-#define TYPE_TODEFINE5 4
 
+
+#define TYPE_LIGHT_SENSOR 16
+#define TYPE_MOBILE 8
+#define TYPE_LIGHT_BULB 4
 #define TYPE_IRRIG 2
-#define TYPE_BULB 1
+#define TYPE_SENSOR 1
 #define TYPE_ERROR 0

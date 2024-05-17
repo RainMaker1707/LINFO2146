@@ -11,16 +11,18 @@ void switch_response(packet_t* packet, const linkaddr_t *src, const linkaddr_t *
         case DIS:
             LOG_INFO("RECEIVED DIS\n");
             discover(packet, src, dest);
-            if(get_parent() == NULL) send_prt(packet->src);
+            if(get_parent_config() && get_parent() == NULL) send_prt(packet->src);
             break;
         case DIO:
-            LOG_INFO("RECEIVED DIO\n");
+            LOG_INFO("RECEIVED DIO ");
+            LOG_INFO_LLADDR(src);
+            printf("\n");
             alive(packet);
             break;
         case DIS+ACK:
             LOG_INFO("RECEIVED DIS+ACK\n");
             discover(packet, src, dest);
-            if(get_parent_config()) send_prt(packet->src);
+            if(get_parent_config() && get_parent() == NULL) send_prt(packet->src);
             break;
         case PRT:
             LOG_INFO("RECEIVED PRT\n");
@@ -43,7 +45,6 @@ void switch_response(packet_t* packet, const linkaddr_t *src, const linkaddr_t *
 void receive(const void *data, uint16_t len, const linkaddr_t *src, const linkaddr_t *dest){
     packet_t* packet = decode((char*)data);
     if(packet == NULL) return;
-    if(!linkaddr_cmp(packet->dst, &linkaddr_node_addr) && !linkaddr_cmp(packet->dst, &linkaddr_null)) return;
-    switch_response(packet, src, dest);
+    if(linkaddr_cmp(packet->dst, &linkaddr_node_addr) || linkaddr_cmp(packet->dst, &linkaddr_null)) switch_response(packet, src, dest);
     free_packet(packet);
 }
