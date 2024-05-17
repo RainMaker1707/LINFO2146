@@ -368,7 +368,7 @@ void neighbor_is_alive(packet_t* packet, const linkaddr_t* neigh_address){
     neighbor->mote->last_time_heard = clock_time();
     uint16_t rssi = (uint16_t)packetbuf_attr(PACKETBUF_ATTR_RSSI);
     neighbor->mote->signal_strenght = rssi;
-    //if(need_parent_config && parent->signal_strenght < rssi) handover(neighbor->mote);
+    if(need_parent_config && parent->signal_strenght < rssi) handover(neighbor->mote);
 }
 
 
@@ -459,11 +459,9 @@ void switch_responder(packet_t* packet, const linkaddr_t* src, const linkaddr_t*
             //LOG_INFO("UDP received\n");
 
             /* LOG TO THE SERVER*/
-            // if(node_rank == GATEWAY){ 
-            //     log_server(packet, src);
-            // }
-
-
+            if(node_rank == GATEWAY){ 
+                log_server(packet, src);
+            }
             node_callback(packet);
             break;
         case PRT:       // ASK FOR PARENTING
