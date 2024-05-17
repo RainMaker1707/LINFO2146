@@ -15,7 +15,7 @@
 #include "protocol/net_process.h"
 
 
-#define SEND_INTERVAL (30 * CLOCK_SECOND)
+#define SEND_INTERVAL (10 * CLOCK_SECOND)
 
 PROCESS(light_bulb, "Light Bulb");
 AUTOSTART_PROCESSES(&light_bulb, &keep_alive_process);
@@ -39,6 +39,9 @@ PROCESS_THREAD(light_bulb, ev, data)
 
     while(1) {
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
+        LOG_INFO("PARENT: ");
+        if(parent!=NULL) LOG_INFO_LLADDR((linkaddr_t*)&(parent->adress));
+        printf("\n");
         print_table();
         etimer_reset(&periodic_timer);
     }

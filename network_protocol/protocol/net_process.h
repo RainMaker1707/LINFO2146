@@ -10,8 +10,7 @@
 #include "protocol/unreliable.h"
 
 
-//#define DIS_INTERVAL (30 * CLOCK_SECOND)
-#define ALIVE_INTERVAL (20 * CLOCK_SECOND)
+#define ALIVE_INTERVAL (5 * CLOCK_SECOND)
 
 PROCESS(keep_alive_process, "alive process");
 

@@ -15,7 +15,6 @@
 #include "protocol/net_process.h"
 #include "dev/button-sensor.h"
 
-#define SEND_INTERVAL (30 * CLOCK_SECOND)
 
 PROCESS(mobile_process, "mobile terminal process");
 AUTOSTART_PROCESSES(&mobile_process, &keep_alive_process);
@@ -40,7 +39,7 @@ PROCESS_THREAD(mobile_process, ev, data)
 
     while(1) {
         PROCESS_WAIT_EVENT_UNTIL(ev==sensors_event && data == &button_sensor);
-
+        LOG_INFO("SEND MAINTENANCE\n");
         send_maintenance();
     }
     PROCESS_END();

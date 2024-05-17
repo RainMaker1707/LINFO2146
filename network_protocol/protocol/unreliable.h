@@ -6,6 +6,7 @@
 #include "contiki.h"
 #include "net/nullnet/nullnet.h"
 #include "net/netstack.h"
+#include "net/packetbuf.h"
 #include "sys/log.h"
 
 #include "../utils/packet.h"
@@ -22,7 +23,7 @@
 
 #define PACKET_MAX_LEN PACKET_SIZE           // packet are 32 bytes max
 
-#define ALIVE_MAX_INTERVAL 15
+#define ALIVE_MAX_INTERVAL 10
 
 #define GATEWAY 2
 #define SUBGATEWAY 1
@@ -90,11 +91,10 @@ void print_table(){
     while(1){
         LOG_INFO("%d: ADD: ", counter);
         LOG_INFO_LLADDR((linkaddr_t*)&(current->mote->adress));
-        LOG_INFO(" dev type: %d", current->mote->device_type);
-        LOG_INFO("\n");
+        printf("\n");
         LOG_INFO("%d: SRC: ", counter++);
         LOG_INFO_LLADDR((linkaddr_t*)&(current->mote->src));
-        LOG_INFO("\n");
+        printf("\n");
         if(current == neighbors->tail) return;
         current = current->next;
     }
@@ -228,7 +228,7 @@ void send_maintenance(){
                 printf("maintenance message %d for ", i);
                 LOG_INFO_LLADDR((linkaddr_t*)&(current->mote->adress));
                 printf("\n");
-                 packet_t* packet = create_packet(TCP, node_rank, (const linkaddr_t*)&linkaddr_node_addr, (const linkaddr_t*)&(current->mote->adress), "mtnce");
+                packet_t* packet = create_packet(TCP, node_rank, (const linkaddr_t*)&linkaddr_node_addr, (const linkaddr_t*)&(current->mote->adress), "mtnce");
                 unreliable_send(packet, UNICAST);
                 free_packet(packet);
             }      
@@ -296,6 +296,13 @@ void send_prt(const linkaddr_t* src){
     }
 }
 
+
+void send_prt_nack(const linkaddr_t* src){
+    packet_t* packet = create_packet(PRT+NACK, node_rank, (const linkaddr_t*)&linkaddr_node_addr, src, "PRT+NACK");
+    unreliable_send(packet, UNICAST);
+    free_packet(packet);
+}
+
 void prt_received(packet_t* packet, const linkaddr_t* src){
     add_child(childs, find_neighbor_in_list(neighbors, src)->mote);
 }
@@ -303,7 +310,8 @@ void prt_received(packet_t* packet, const linkaddr_t* src){
 
 void attach_parent(packet_t* packet, const linkaddr_t* src){
     // TODO: check signal strength
-    if(need_parent_config && parent == NULL && packet->src_rank == node_rank+1) {
+    if(need_parent_config && parent==NULL && packet->src_rank == node_rank+1) {
+        LOG_INFO("PARENT INNER\n");
         if(find_neighbor_in_list(neighbors, packet->src) == NULL) LOG_INFO("PARENT NOT FIND IN NEIGHBOR\n");
         else if(linkaddr_cmp((const linkaddr_t*)packet->src, &linkaddr_null)) LOG_INFO("Cannot attach NULL as parent\n");
         else {
@@ -327,7 +335,8 @@ void discover_neighbor(){
 
 void receive_dis(packet_t* packet, const linkaddr_t* src){
     if(!list_contains_src(neighbors, (linkaddr_t*)packet->src)) {
-        mote_t* mote = create_mote(packet->src_rank, packet->src, 10, src); // TODO: replace 10 by signal strength
+        uint16_t rssi = (uint16_t)packetbuf_attr(PACKETBUF_ATTR_RSSI);
+        mote_t* mote = create_mote(packet->src_rank, packet->src, rssi, src);
         add_child(neighbors, mote);
     }
     // Respond to DIS but not DIS+ACK
@@ -344,6 +353,19 @@ void receive_dis(packet_t* packet, const linkaddr_t* src){
 
 
 // ############### ALIVE API ################
+
+
+
+void handover(mote_t* mote){
+    if(!linkaddr_cmp((linkaddr_t*)&mote->adress, (linkaddr_t*)&mote->src)) return;
+    LOG_INFO("HANDOVER\n");
+    if(parent->signal_strenght < mote->signal_strenght && parent->rank == mote->rank){
+        LOG_INFO("DO HANDOVER\n");
+        send_prt_nack((linkaddr_t*)&parent->adress);
+        send_prt((linkaddr_t*)&mote->adress);
+        parent = mote;
+    }
+}
 
 /*
   set the last time heard parameter of the neighbor to the current cpu time
@@ -362,8 +384,10 @@ void neighbor_is_alive(packet_t* packet, const linkaddr_t* neigh_address){
         neighbor->mote->device_type = atoi(packet->payload);
     }
     neighbor->mote->last_time_heard = clock_time();
+    uint16_t rssi = (uint16_t)packetbuf_attr(PACKETBUF_ATTR_RSSI);
+    neighbor->mote->signal_strenght = rssi;
+    //if(need_parent_config && parent->signal_strenght < rssi) handover(neighbor->mote);
 }
-
 
 
 /*
@@ -372,7 +396,7 @@ void neighbor_is_alive(packet_t* packet, const linkaddr_t* neigh_address){
 */
 void process_neighbors_last_time(list_t* list){
     if(list == NULL||list->head == NULL) return;
-    unsigned long long alive_difference = 60 * CLOCK_SECOND;
+    unsigned long long alive_difference = ALIVE_MAX_INTERVAL * CLOCK_SECOND;
 
     
     node_t* current = list->head;
@@ -453,9 +477,9 @@ void switch_responder(packet_t* packet, const linkaddr_t* src, const linkaddr_t*
             //LOG_INFO("UDP received\n");
 
             /* LOG TO THE SERVER*/
-            if(node_rank == GATEWAY){ 
-                log_server(packet, src);
-            }
+            // if(node_rank == GATEWAY){ 
+            //     log_server(packet, src);
+            // }
 
 
             node_callback(packet);
