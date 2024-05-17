@@ -24,18 +24,22 @@ node_t* find_child(list_t* list, linkaddr_t* addr){
 
 
 
-void alive(packet_t* packet){
+void alive(packet_t* packet, linkaddr_t* src){
+    int16_t rssi = (int16_t)packetbuf_attr(PACKETBUF_ATTR_RSSI);
     node_t* neigh = find_child(get_neighbors(), packet->src);
     if(neigh != NULL){
         // UPDATE MOTE LAST TIME HEARD TO NOW
         neigh->mote->last_time_heard = clock_time();
         // UPDATE MOTE SIGNAL STRENGTH
-        int16_t rssi = (int16_t)packetbuf_attr(PACKETBUF_ATTR_RSSI);
         neigh->mote->signal_strenght = rssi;
         // SEND PRT to new parent concurrent
         if(get_parent_config()){
             attach_parent(packet, packet->src);
         }
+    }else {
+        mote_t* mote = create_mote(packet->type, packet->src_rank, packet->src, rssi, src);
+        add_child(get_neighbors(), mote);
+        send_discover_ack(src);
     }
 }
 

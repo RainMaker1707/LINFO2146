@@ -8,6 +8,12 @@ void send_discover(){
     free_packet(packet);
 }
 
+void send_discover_ack(linkaddr_t* dst){
+    packet_t* packet_sd = create_packet(get_type(), DIS+ACK, get_rank(), (const linkaddr_t*)&linkaddr_node_addr, dst, "DISC+ACK");
+    send(packet_sd, UNICAST);
+    free_packet(packet_sd);
+}
+
 
 void discover(packet_t* packet, const linkaddr_t *src, const linkaddr_t *dest){
     if(!list_contains_src(get_neighbors(), packet->src)){
@@ -17,7 +23,5 @@ void discover(packet_t* packet, const linkaddr_t *src, const linkaddr_t *dest){
     }
     // RESPOND DIS+ACK for all DIS received
     if(packet->flags == DIS+ACK) return;
-    packet_t* packet_sd = create_packet(get_type(), DIS+ACK, get_rank(), (const linkaddr_t*)&linkaddr_node_addr, src, "DISC+ACK");
-    send(packet_sd, UNICAST);
-    free_packet(packet_sd);
+    send_discover_ack((linkaddr_t*)src);
 }

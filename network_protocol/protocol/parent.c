@@ -39,13 +39,22 @@ void send_prt_nack(linkaddr_t* dest){
     Function that define the behavior when your receive a PRT packet
 */
 void receive_prt(packet_t* packet, linkaddr_t* src){
-    if(get_parent_config() && get_parent()==NULL) send_prt_nack(packet->src);
-    else if(get_rank() == packet->src_rank+2) send_prt_nack(packet->src);
-    else if(linkaddr_cmp((linkaddr_t*)&get_parent()->adress, packet->src)) {
+    if(get_parent_config() && get_parent()==NULL) {
+        LOG_INFO("IN BUG 0\n");
+        send_prt_nack(packet->src);
+    }else if(get_rank() == packet->src_rank+2) {
+        LOG_INFO("IN BUG 1\n");
+        send_prt_nack(packet->src);
+    }else if(linkaddr_cmp((linkaddr_t*)&get_parent()->adress, packet->src)) {
+        LOG_INFO("IN BUG 2\n");
         send_prt_nack(packet->src);
     }else{
         node_t* node = find_child(get_neighbors(), packet->src);
-        if(node == NULL) return;
+        if(node == NULL) {
+            LOG_INFO("CHILDS empty\n");
+            return;
+        }
+        LOG_INFO("HERE\n");
         add_child(get_childs(), node->mote);
         send_prt_ack(packet->src);
     }

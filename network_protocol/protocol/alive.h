@@ -11,6 +11,7 @@
 #include "net_api/setup.h"
 
 #include "protocol/parent.h"
+#include "protocol/discover.h"
 
 #include "sys/clock.h"
 #include "sys/log.h"
@@ -20,7 +21,7 @@
 
 void heartbeat(int rank);
 
-void alive(packet_t* packet);
+void alive(packet_t* packet, linkaddr_t* src);
 
 void check_neighbors(list_t* list);
 

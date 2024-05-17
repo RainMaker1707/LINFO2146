@@ -23,3 +23,5 @@ void send(packet_t* packet, int mode);
 
 
 //void unreliable_send(packet_t* packet, int mode) { send(packet, mode);}     // TO not change the old API
+
+void send_dst(packet_t* packet, int mode, linkaddr_t* dst);

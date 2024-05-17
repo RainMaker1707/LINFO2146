@@ -13,6 +13,8 @@
 #include "protocol/alive.h"
 #include "protocol/discover.h"
 #include "protocol/parent.h"
+#include "protocol/unicast.h"
+#include "protocol/broadcast.h"
 
 #include "setup.h"
 

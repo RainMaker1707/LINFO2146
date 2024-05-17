@@ -29,3 +29,12 @@ void send(packet_t* packet, int mode){
     }
     free(buffer);
 }
+
+
+void send_dst(packet_t* packet, int mode, linkaddr_t* dst){
+    uint8_t* buffer = (uint8_t*)encode(packet);
+    nullnet_len = PACKET_SIZE;
+    memcpy(nullnet_buf, buffer, PACKET_SIZE);  // Use nullnet_buf directly
+    NETSTACK_NETWORK.output(dst);
+    free(buffer);
+}

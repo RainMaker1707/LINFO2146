@@ -12,4 +12,5 @@
 
 
 void send_discover();
+void send_discover_ack(linkaddr_t* dst);
 void discover(packet_t* packet, const linkaddr_t *src, const linkaddr_t *dest);
