@@ -37,7 +37,6 @@ PROCESS_THREAD(sender_process, ev, data)
     while(1) {
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
         LOG_INFO("GATEWAY Inner process \n");
-        print_table();
         etimer_reset(&periodic_timer);
     }
     PROCESS_END();

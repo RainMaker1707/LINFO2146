@@ -23,7 +23,7 @@
 
 #define PACKET_MAX_LEN PACKET_SIZE           // packet are 32 bytes max
 
-#define ALIVE_MAX_INTERVAL 10
+#define ALIVE_MAX_INTERVAL 30
 
 #define GATEWAY 2
 #define SUBGATEWAY 1
@@ -152,12 +152,6 @@ void broadcast_unreliable_send(uint8_t* buffer){
     NETSTACK_NETWORK.output(NULL);
 }
 
-
-void multicast_unreliable_send(uint8_t* buffer){
-    printf("NOT IMPLEMENTED MULTICAST: %s\n", decode((char*)buffer)->payload);
-}
-
-
 /*
     Encode and send the packet to the address (mode=UNICAST), group address (mode=MULTICAST)
      or all address (mode=BROADCAST)
@@ -174,9 +168,6 @@ void unreliable_send(packet_t* packet, int mode){
             break;
         case BROADCAST: 
             broadcast_unreliable_send(buffer);
-            break;
-        case MULTICAST: 
-            multicast_unreliable_send(buffer);
             break;
         default:
             printf("\033[33mMode not compatible %d\033[0m\n", mode);
@@ -252,11 +243,6 @@ void multicast_send(packet_t* packet ,int type, char* payload, int flag){
     node_t* current = neighbors->head;
     while(1){
         if(current->mote->device_type == type){
-            /*printf("send mult to \n");
-            LOG_INFO_LLADDR((linkaddr_t*)&(current->mote->adress));
-            printf(" - from ");
-            LOG_INFO_LLADDR(packet->src);
-            printf("\n");*/
             packet_t* packet_mlt = create_packet(flag, node_rank, packet->src, (const linkaddr_t*)&(current->mote->adress), payload);
             unreliable_send(packet_mlt, UNICAST);
             free_packet(packet_mlt);
@@ -311,7 +297,6 @@ void prt_received(packet_t* packet, const linkaddr_t* src){
 void attach_parent(packet_t* packet, const linkaddr_t* src){
     // TODO: check signal strength
     if(need_parent_config && parent==NULL && packet->src_rank == node_rank+1) {
-        LOG_INFO("PARENT INNER\n");
         if(find_neighbor_in_list(neighbors, packet->src) == NULL) LOG_INFO("PARENT NOT FIND IN NEIGHBOR\n");
         else if(linkaddr_cmp((const linkaddr_t*)packet->src, &linkaddr_null)) LOG_INFO("Cannot attach NULL as parent\n");
         else {
@@ -358,7 +343,7 @@ void receive_dis(packet_t* packet, const linkaddr_t* src){
 
 void handover(mote_t* mote){
     if(!linkaddr_cmp((linkaddr_t*)&mote->adress, (linkaddr_t*)&mote->src)) return;
-    LOG_INFO("HANDOVER\n");
+    LOG_INFO("HANDOVER?\n");
     if(parent->signal_strenght < mote->signal_strenght && parent->rank == mote->rank){
         LOG_INFO("DO HANDOVER\n");
         send_prt_nack((linkaddr_t*)&parent->adress);
@@ -375,9 +360,6 @@ void neighbor_is_alive(packet_t* packet, const linkaddr_t* neigh_address){
     node_t* neighbor = find_neighbor_in_list(neighbors, packet->src);
     if(neighbor == NULL){
         discover_neighbor();
-        LOG_INFO(" neighbor not found ");
-        LOG_INFO_LLADDR(packet->src);
-        LOG_INFO("\n");
         return;
     }
     if(neighbor->mote->device_type == -1){

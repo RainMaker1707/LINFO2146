@@ -39,7 +39,6 @@ PROCESS_THREAD(irrigation_system, ev, data)
 
     while(1) {
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
-        print_table();
         etimer_reset(&periodic_timer);
     }
     PROCESS_END();

@@ -39,7 +39,7 @@ PROCESS_THREAD(mobile_process, ev, data)
 
     while(1) {
         PROCESS_WAIT_EVENT_UNTIL(ev==sensors_event && data == &button_sensor);
-        LOG_INFO("SEND MAINTENANCE\n");
+        LOG_INFO("BUTTON PRESSED\n");
         send_maintenance();
     }
     PROCESS_END();
