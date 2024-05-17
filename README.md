@@ -15,3 +15,6 @@ sub_gateway.c : the subgateways
 lightbulb.c : the light bulbs
 
 light_sensor.c : the light sensors
+
+
+Our python server is located in the server floder.
