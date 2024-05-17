@@ -35,7 +35,7 @@ Packets are composed of 256  bits. So 32 bytes.\
     Flags are stored on the second byte of the Header.\
     You can add the Flags you want to use at the same time, flags constant are stored in flags.h.\
 
- - **TCP** TCP: Used to send a data message that requires an ACK 
+ - **TCP** TCP: Mobile terminal maintenance messages
  - **MLT** Multicast: Used to send multicast messages.
  - **ACK** Acknoledged: #Packet set in was received.
  - **NACK** Not Acknoledged: #Packet set in was not received.
@@ -47,21 +47,6 @@ Packets are composed of 256  bits. So 32 bytes.\
 
 ##### Source rank
     Third bytes of the Header, store the rank of the node that sends the packet.
-
-##### Checksum
-    Fourth byte, need to find an explanation by it fill the byte gap 
-
-### Tree formation
-### Send packet
-### Receive packet
-
-### Unicast
-
-### Broadcast
-Packet X is received with dst adress set to the broadcast ipv6 adress.\
-Two possibilities:\
- - Node has child and then read message, take action if needed and finally forward the message to all its childs
- - Node has not child, it will read the message and then discard it after taking action if needed
 
 
 
