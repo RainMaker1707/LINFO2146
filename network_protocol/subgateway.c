@@ -46,26 +46,6 @@ void print_table(){
 }
 
 
-void print_childs(){
-    if(get_childs()->head == NULL) {
-        LOG_INFO("## NO CHILDS\n");
-        return;
-    }
-    int counter = 0;
-    node_t* current = get_childs()->head;
-    while(1){
-        LOG_INFO("%d: ADD: ", counter);
-        LOG_INFO_LLADDR((linkaddr_t*)&(current->mote->adress));
-        LOG_INFO("\n");
-        LOG_INFO("%d: SRC: ", counter++);
-        LOG_INFO_LLADDR((linkaddr_t*)&(current->mote->src));
-        LOG_INFO("\n");
-        if(current == get_childs()->tail) return;
-        current = current->next;
-    }
-}
-
-
 
 void callback(packet_t* packet){
     LOG_INFO("UDP PACKET RECEIVED\n");
@@ -87,7 +67,7 @@ PROCESS_THREAD(sender_process, ev, data)
         LOG_INFO("PARENT: ");
         if(get_parent() != NULL) LOG_INFO_LLADDR((linkaddr_t*)&(get_parent()->adress));
         printf("\n");
-        print_childs();
+        print_table();
         etimer_reset(&periodic_timer);
     }
     PROCESS_END();

@@ -6,7 +6,6 @@
     Send a packet with PRT flag to ask a node to be parent
 */
 void send_prt(linkaddr_t* dest){
-    LOG_INFO("PRT SENT\n");
     if(list_contains_src(get_childs(), dest) || linkaddr_cmp((linkaddr_t*)&get_parent()->adress, dest)) return;
     if(get_rank() == GATEWAY) return;
     packet_t* packet = create_packet(get_type(), PRT, get_rank(), &linkaddr_node_addr, dest, "PARENT");
@@ -15,7 +14,6 @@ void send_prt(linkaddr_t* dest){
 }
 
 void send_prt_ack(linkaddr_t* dest){
-    LOG_INFO("PRT ACK SENT\n");
     if(get_parent() != NULL && linkaddr_cmp((linkaddr_t*)&get_parent()->adress, dest)) send_prt_nack(dest);
     else{
         packet_t* packet = create_packet(get_type(), PRT+ACK, get_rank(), &linkaddr_node_addr, dest, "PARENT");
@@ -25,7 +23,6 @@ void send_prt_ack(linkaddr_t* dest){
 }
 
 void send_prt_nack(linkaddr_t* dest){
-    LOG_INFO("PRT NACK SENT ");
     LOG_INFO_LLADDR(dest);
     printf("\n");
     packet_t* packet = create_packet(get_type(), PRT+NACK, get_rank(), &linkaddr_node_addr, dest, "PARENT");
@@ -40,21 +37,16 @@ void send_prt_nack(linkaddr_t* dest){
 */
 void receive_prt(packet_t* packet, linkaddr_t* src){
     if(get_parent_config() && get_parent()==NULL) {
-        LOG_INFO("IN BUG 0\n");
         send_prt_nack(packet->src);
     }else if(get_rank() == packet->src_rank+2) {
-        LOG_INFO("IN BUG 1\n");
         send_prt_nack(packet->src);
     }else if(linkaddr_cmp((linkaddr_t*)&get_parent()->adress, packet->src)) {
-        LOG_INFO("IN BUG 2\n");
         send_prt_nack(packet->src);
     }else{
         node_t* node = find_child(get_neighbors(), packet->src);
         if(node == NULL) {
-            LOG_INFO("CHILDS empty\n");
             return;
         }
-        LOG_INFO("HERE\n");
         add_child(get_childs(), node->mote);
         send_prt_ack(packet->src);
     }
@@ -84,9 +76,7 @@ void attach_parent(packet_t* packet, linkaddr_t* addr){
         || (get_parent()->signal_strenght < (int16_t)packetbuf_attr(PACKETBUF_ATTR_RSSI) && (get_parent()->rank == packet->src_rank)) // If node has same rank but better signal
         ) 
     {
-        LOG_INFO("ENTERED\n");
         if(get_parent() != NULL) {
-            LOG_INFO("RESET PARENT\n");
             send_prt_nack((linkaddr_t*)&get_parent()->adress); // say to node he is no more our parent
             set_parent(NULL); // reset parent before change
         }

@@ -7,4 +7,4 @@
 
 bool contains_rly(packet_t* packet);
 
-void broadcast_redirection(packet_t* packet);
+void broadcast_redirection(packet_t* packet, linkaddr_t* src);

@@ -34,7 +34,7 @@ void alive(packet_t* packet, linkaddr_t* src){
         neigh->mote->signal_strenght = rssi;
         // SEND PRT to new parent concurrent
         if(get_parent_config()){
-            attach_parent(packet, packet->src);
+            send_prt(packet->src);
         }
     }else {
         mote_t* mote = create_mote(packet->type, packet->src_rank, packet->src, rssi, src);

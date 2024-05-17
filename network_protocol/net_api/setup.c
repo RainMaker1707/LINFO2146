@@ -53,6 +53,7 @@ void setup_node(uint8_t type, uint8_t rank, void* callback) {
     nullnet_set_input_callback(receive);
     
     node_type = type;
+    
     // SETUP inner list
     childs = create_list(); // empty at first, only add when asked to be parent and accept
     neighbors = create_list();

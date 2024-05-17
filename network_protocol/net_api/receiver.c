@@ -10,7 +10,7 @@ void switch_response(packet_t* packet, const linkaddr_t *src, const linkaddr_t *
             get_callback()(packet);
             break;
         case DIS:
-            //LOG_INFO("RECEIVED DIS\n");
+            // LOG_INFO("RECEIVED DIS\n");
             discover(packet, src, dest);
             if(get_parent_config() && get_parent() == NULL) send_prt(packet->src);
             break;
@@ -19,20 +19,20 @@ void switch_response(packet_t* packet, const linkaddr_t *src, const linkaddr_t *
             alive(packet, (linkaddr_t*)src);
             break;
         case DIS+ACK:
-            // LOG_INFO("RECEIVED DIS+ACK\n");
+            //LOG_INFO("RECEIVED DIS+ACK\n");
             discover(packet, src, dest);
             if(get_parent_config() && get_parent() == NULL) send_prt(packet->src);
             break;
         case PRT:
-            LOG_INFO("RECEIVED PRT\n");
+            //LOG_INFO("RECEIVED PRT\n");
             receive_prt(packet, (linkaddr_t*)src);
             break;
         case PRT+ACK:
-            LOG_INFO("RECEIVED PRT+ACK\n");
+            //LOG_INFO("RECEIVED PRT+ACK\n");
             attach_parent(packet, packet->src);
             break;
         case PRT+NACK:
-            // LOG_INFO("RECEIVED PRT+NACK\n");
+            //LOG_INFO("RECEIVED PRT+NACK\n");
             break;
         default:
             LOG_INFO("PACKET ERROR FLAGS\n");
@@ -46,11 +46,9 @@ void receive(const void *data, uint16_t len, const linkaddr_t *src, const linkad
     if(packet == NULL) return;
     if(linkaddr_cmp(packet->dst, &linkaddr_node_addr) || linkaddr_cmp(packet->dst, &linkaddr_null)) switch_response(packet, src, dest);
     if(contains_rly(packet) || linkaddr_cmp(packet->dst, &linkaddr_null)) {
-        // LOG_INFO("RETRANSMIT BROADCAST\n");
-        broadcast_redirection(packet);
+        //broadcast_redirection(packet, (linkaddr_t*)src);
     }else if(!linkaddr_cmp(packet->dst, &linkaddr_node_addr)) {
-        // LOG_INFO("RETRANSMIT UNICAST\n");
-        unicast_redirection(packet);
+        //unicast_redirection(packet);
     }
     free_packet(packet);
 }
