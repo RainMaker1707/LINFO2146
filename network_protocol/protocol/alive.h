@@ -10,6 +10,8 @@
 #include "net_api/sender.h"
 #include "net_api/setup.h"
 
+#include "protocol/parent.h"
+
 #include "sys/clock.h"
 #include "sys/log.h"
 

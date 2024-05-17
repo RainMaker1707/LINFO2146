@@ -4,7 +4,8 @@
 #include "sender.h"
 #include "setup.h"
 
-#define DISCOVER_INTERVAL (120 * CLOCK_SECOND)
+#define CLOCK_MINUTE (60 * CLOCK_SECOND)
+#define DISCOVER_INTERVAL (5 * CLOCK_MINUTE)
 #define ALIVE_INTERVAL (20 * CLOCK_SECOND)
 
 

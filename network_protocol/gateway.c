@@ -28,7 +28,7 @@ AUTOSTART_PROCESSES(&sender_process, &keep_alive, &discover_process);
 
 
 void callback(packet_t* packet){
-    LOG_INFO("PACKET RECEIVED\n");
+    LOG_INFO("UDP PACKET RECEIVED\n");
 }
 
 
@@ -44,10 +44,7 @@ PROCESS_THREAD(sender_process, ev, data)
 
     while(1) {
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
-        LOG_INFO("ALL OK\n");
-        LOG_INFO("PARENT: ");
-        if(get_parent() != NULL) LOG_INFO_LLADDR((linkaddr_t*)&(get_parent()->adress));
-        LOG_INFO("\n");
+        LOG_INFO("GATEWAY\n");
         etimer_reset(&periodic_timer);
     }
     PROCESS_END();

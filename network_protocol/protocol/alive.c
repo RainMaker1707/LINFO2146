@@ -27,9 +27,25 @@ node_t* find_child(list_t* list, linkaddr_t* addr){
 
 void alive(packet_t* packet){
     node_t* neigh = find_child(get_neighbors(), packet->src);
-    if(neigh == NULL) {
-        printf("No neighbors found\n");
-    }else neigh->mote->last_time_heard = clock_time();
+    if(neigh != NULL){
+        // UPDATE MOTE LAST TIME HEARD TO NOW
+        neigh->mote->last_time_heard = clock_time();
+        // UPDATE MOTE SIGNAL STRENGTH
+        int16_t rssi = (int16_t)packetbuf_attr(PACKETBUF_ATTR_RSSI);
+        neigh->mote->signal_strenght = rssi;
+        // SEND PRT to new parent concurrent
+        printf("TEST: %d, RANK %d -- SRCRK %d\n",packet->src_rank == get_parent()->rank+1, get_parent()->rank, packet->src_rank); 
+        if(get_parent_config()){
+            if(get_parent() == NULL
+            || (get_parent()->signal_strenght < rssi && get_parent()->rank == packet->src_rank) 
+            || packet->src_rank == get_parent()->rank+1
+            )
+        {
+            printf("SEND PRT\n");
+            send_prt(packet->src);
+        }
+        }
+    }
 }
 
 
@@ -41,7 +57,6 @@ void check_neighbors(list_t* list){
     node_t* tmp = current;
     while(1){
         if(clock_time() - current->mote->last_time_heard > interval){
-            printf("Need to delete neighbor\n");
             if(get_parent() == current->mote) set_parent(NULL);
             if(list->head==list->tail){
                 free(current->mote);

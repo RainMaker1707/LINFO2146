@@ -20,3 +20,6 @@
     MULTICAST: packet is send from server to a group of node (irrigation or light_bulb)
 */
 void send(packet_t* packet, int mode);
+
+
+//void unreliable_send(packet_t* packet, int mode) { send(packet, mode);}     // TO not change the old API

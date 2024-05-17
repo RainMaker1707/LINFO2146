@@ -6,22 +6,20 @@
     Send a packet with PRT flag to ask a node to be parent
 */
 void send_prt(linkaddr_t* dest){
-    printf("send PRT\n");
     if(list_contains_src(get_childs(), dest) || linkaddr_cmp((linkaddr_t*)&get_parent()->adress, dest)) return;
+    if(get_rank() == GATEWAY) return;
     packet_t* packet = create_packet(get_type(), PRT, get_rank(), &linkaddr_node_addr, dest, "PARENT");
     send(packet, UNICAST);
     free_packet(packet);
 }
 
 void send_prt_ack(linkaddr_t* dest){
-    printf("PRT ACK\n");
     packet_t* packet = create_packet(get_type(), PRT+ACK, get_rank(), &linkaddr_node_addr, dest, "PARENT");
     send(packet, UNICAST);
     free_packet(packet);
 }
 
 void send_prt_nack(linkaddr_t* dest){
-    printf("PRT NACK\n");
     packet_t* packet = create_packet(get_type(), PRT+NACK, get_rank(), &linkaddr_node_addr, dest, "PARENT");
     send(packet, UNICAST);
     free_packet(packet);
@@ -35,10 +33,11 @@ void send_prt_nack(linkaddr_t* dest){
 void receive_prt(packet_t* packet, linkaddr_t* src){
     if(get_parent_config() && get_parent()==NULL) send_prt_nack(packet->src);
     else if(linkaddr_cmp((linkaddr_t*)&get_parent()->adress, packet->src)) {
-        LOG_INFO("PARENT ADDR\n");
         send_prt_nack(packet->src);
     }else{
-        add_child(get_childs(), find_child(get_neighbors(), packet->src)->mote);
+        node_t* node = find_child(get_neighbors(), packet->src);
+        if(node == NULL) LOG_INFO("HERE\n");
+        add_child(get_childs(), node->mote);
         send_prt_ack(packet->src);
     }
 }
@@ -62,11 +61,11 @@ void attach_parent(packet_t* packet, linkaddr_t* addr){
     // TODO: check signal strength
     if(list_contains_src(get_childs(), packet->src)) return;
     if((get_parent_config() && get_parent() == NULL)        // If need parent but not have one
-        || get_rank()+1 == packet->src_rank                 // If rank is equal to the superior rank // TODO: check here because of behavior changement on +1 or not
-        || compare_signal_strength(get_parent(), find_child(get_neighbors(), packet->src)->mote) < 0)
+        || (get_rank()+1 == packet->src_rank && get_parent()->rank < packet->src_rank)        // If rank is equal to the superior rank
+        || (get_parent()->signal_strenght < (int16_t)packetbuf_attr(PACKETBUF_ATTR_RSSI) && get_parent()->rank == packet->src_rank) // If node has same rank but better signal
+        ) 
     {
         if(get_parent() != NULL) {
-            LOG_INFO("HERE\n");
             send_prt_nack((linkaddr_t*)&get_parent()->adress); // say to node he is no more our parent
             set_parent(NULL); // reset parent before change
         }
@@ -81,10 +80,11 @@ void attach_parent(packet_t* packet, linkaddr_t* addr){
 /*
     return X an int to indicate which mote has the higher signal strength
         if X == 0: signal are the same
-        if X > 0: mote1 has the highest signal
-        if X < 0: mote2 has the highest signal
+        if X > 0: mote2 has the highest signal
+        if X < 0: mote1 has the highest signal
 */
 int compare_signal_strength(mote_t* mote1, mote_t* mote2){
+    printf("COMPARE = %d", mote1->signal_strenght - mote2->signal_strenght);
     return mote1->signal_strenght - mote2->signal_strenght;
 }
 

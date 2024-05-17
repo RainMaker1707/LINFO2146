@@ -7,6 +7,8 @@
 #include "net_api/sender.h"
 #include "net_api/setup.h"
 
+#include "net/packetbuf.h"
+
 
 
 void send_discover();

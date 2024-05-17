@@ -14,7 +14,9 @@ void switch_response(packet_t* packet, const linkaddr_t *src, const linkaddr_t *
             if(get_parent() == NULL) send_prt(packet->src);
             break;
         case DIO:
-            LOG_INFO("RECEIVED DIO\n");
+            LOG_INFO("RECEIVED DIO ");
+            LOG_INFO_LLADDR(packet->src);
+            LOG_INFO("\n");
             alive(packet);
             break;
         case DIS+ACK:
