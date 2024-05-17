@@ -20,4 +20,6 @@ void heartbeat(int rank);
 
 void alive(packet_t* packet);
 
-void check_neighbors();
+void check_neighbors(list_t* list);
+
+node_t* find_child(list_t* list, linkaddr_t* addr);

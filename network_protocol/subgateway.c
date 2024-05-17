@@ -38,7 +38,7 @@ PROCESS_THREAD(sender_process, ev, data)
     PROCESS_BEGIN();
     
     
-    setup_node(TYPE_BULB, SENSOR, callback);
+    setup_node(TYPE_SUBGATEWAY, SUBGATEWAY, callback);
 
     etimer_set(&periodic_timer, SEND_INTERVAL);
 

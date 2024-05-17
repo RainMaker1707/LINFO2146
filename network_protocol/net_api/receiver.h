@@ -12,6 +12,7 @@
 
 #include "protocol/alive.h"
 #include "protocol/discover.h"
+#include "protocol/parent.h"
 
 #include "setup.h"
 

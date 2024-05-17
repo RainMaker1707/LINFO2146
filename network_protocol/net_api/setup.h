@@ -27,6 +27,8 @@ uint8_t get_rank();
 uint8_t get_type();
 mote_t* get_parent();
 void set_parent(mote_t* mote);
+bool get_parent_config();
+list_t* get_childs();
 
 
 /*

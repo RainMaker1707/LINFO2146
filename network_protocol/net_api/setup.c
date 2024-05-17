@@ -13,30 +13,21 @@ uint8_t node_type = 0; // ERROR type by default
 fct_ptr node_callback;
 
 
-fct_ptr get_callback(){
-    return node_callback;
-}
+fct_ptr get_callback(){return node_callback;}
 
-uint8_t get_rank(){
-    return node_rank;
-}
+uint8_t get_rank(){return node_rank;}
 
-uint8_t get_type(){
-    return node_type;
-}
+uint8_t get_type(){return node_type;}
 
+list_t* get_neighbors() {return neighbors;}
 
-list_t* get_neighbors() { 
-    return neighbors;
-}
+mote_t* get_parent(){return parent;}
 
-mote_t* get_parent(){
-    return parent;
-}
+void set_parent(mote_t* mote){parent = mote;}
 
-void set_parent(mote_t* mote){
-    parent = mote;
-}
+bool get_parent_config(){return need_parent_config;}
+
+list_t* get_childs(){return childs;}
 // ############################### SETUP API ###############################
 
 
@@ -50,7 +41,9 @@ static uint8_t buffer[PACKET_SIZE];
     @Param: accept_childs: if true then the mote will accept child when receive a PRT packet
                             by default set as false
 */
-void setup_gateway(uint8_t type, uint8_t rank, bool accept_child, bool need_parent, void* callback){
+
+
+void setup_node(uint8_t type, uint8_t rank, void* callback) {
     // NULLNET config
     nullnet_buf = buffer;
     nullnet_len = PACKET_SIZE;
@@ -58,20 +51,13 @@ void setup_gateway(uint8_t type, uint8_t rank, bool accept_child, bool need_pare
     nullnet_set_input_callback(receive);
     node_type = type;
     // SETUP inner list
-    if(accept_child) childs = create_list(); // empty at first, only add when asked to be parent and accept
+    childs = create_list(); // empty at first, only add when asked to be parent and accept
     neighbors = create_list();
-    accept_childs_config = accept_child; // To know if node accept childs
-    need_parent_config = need_parent;    // To know if node accept parent
+
+    if(rank == GATEWAY) need_parent_config = false;    // To know if node accept parent
+    else need_parent_config = true;
+    
     node_rank = rank;
     node_callback = (fct_ptr)callback;
     LOG_INFO("Node setup ok\n");
-}
-
-void setup_subgateway(uint8_t type, uint8_t rank, bool accept_child, void* callback){
-    setup_gateway(type, rank, accept_child, true, callback);
-}
-
-
-void setup_node(uint8_t type, uint8_t rank, void* callback) {
-    setup_subgateway(type, rank, false, callback);
 }
