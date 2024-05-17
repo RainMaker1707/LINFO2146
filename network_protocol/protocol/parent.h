@@ -2,6 +2,10 @@
 
 #include "constants/constant.h"
 #include "constants/flags.h"
+
+#include "utils/net_list.h"
+#include "utils/packet.h"
+
 #include "net_api/setup.h"
 #include "alive.h"
 
@@ -36,3 +40,9 @@ void attach_parent(packet_t* packet, linkaddr_t* addr);
         if X < 0: mote2 has the highest signal
 */
 int compare_signal_strength(mote_t* mote1, mote_t* mote2);
+
+
+
+/*
+*/
+void remove_child(list_t* list, linkaddr_t* addr);

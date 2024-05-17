@@ -33,10 +33,7 @@ void send_prt_nack(linkaddr_t* dest){
     Function that define the behavior when your receive a PRT packet
 */
 void receive_prt(packet_t* packet, linkaddr_t* src){
-    if(get_parent_config() && get_parent()==NULL){
-        LOG_INFO("PARENT NULL\n");
-        send_prt_nack(packet->src);
-    }
+    if(get_parent_config() && get_parent()==NULL) send_prt_nack(packet->src);
     else if(linkaddr_cmp((linkaddr_t*)&get_parent()->adress, packet->src)) {
         LOG_INFO("PARENT ADDR\n");
         send_prt_nack(packet->src);
@@ -49,18 +46,28 @@ void receive_prt(packet_t* packet, linkaddr_t* src){
 
 
 /*
+*/
+void receive_prt_nack(packet_t* packet){
+    if(list_contains_src(get_childs(), packet->src)) {
+        remove_child(get_childs(), packet->src);
+    }
+}
+
+
+
+/*
     Attach parent IFF no parent is setup OR better signal strength with same rank is found
 */
 void attach_parent(packet_t* packet, linkaddr_t* addr){
     // TODO: check signal strength
-    printf("attaching parent\n");
     if(list_contains_src(get_childs(), packet->src)) return;
-    if((get_parent_config() && get_parent() == NULL) 
-        || get_rank()+1 == packet->src_rank 
+    if((get_parent_config() && get_parent() == NULL)        // If need parent but not have one
+        || get_rank()+1 == packet->src_rank                 // If rank is equal to the superior rank // TODO: check here because of behavior changement on +1 or not
         || compare_signal_strength(get_parent(), find_child(get_neighbors(), packet->src)->mote) < 0)
-    { 
+    {
         if(get_parent() != NULL) {
-            send_prt_nack((linkaddr_t*)&get_parent()->adress);
+            LOG_INFO("HERE\n");
+            send_prt_nack((linkaddr_t*)&get_parent()->adress); // say to node he is no more our parent
             set_parent(NULL); // reset parent before change
         }
         if(find_child(get_neighbors(), packet->src) == NULL) LOG_INFO("PARENT NOT FIND IN NEIGHBOR\n");
@@ -79,4 +86,43 @@ void attach_parent(packet_t* packet, linkaddr_t* addr){
 */
 int compare_signal_strength(mote_t* mote1, mote_t* mote2){
     return mote1->signal_strenght - mote2->signal_strenght;
+}
+
+
+/*
+*/
+void remove_child(list_t* list, linkaddr_t*  addr){
+    if(list->head == NULL || addr == NULL) return;
+    node_t* current = list->head;
+    node_t* tmp = list->head;
+    while(1){
+        if(linkaddr_cmp(addr, (linkaddr_t*)&current->mote->adress)){
+            if(get_parent() == current->mote) set_parent(NULL);
+            if(list->head==list->tail){
+                free_node(current);
+                list->head = NULL;
+                list->tail = NULL;
+                current = NULL;
+                return;
+            }
+            if(current == list->head){
+                list->head = current->next;
+                free_node(current);
+                current = list->head;
+                list->tail->next = list->head;
+            } else if(current == list->tail){
+                tmp->next = list->head;
+                free_node(current);
+                list->tail = tmp;
+            }else{
+                tmp->next = current->next;
+                free_node(current);
+                current = tmp;
+            }
+            return;
+        }
+        if(current == list->tail) return;
+        tmp = current;
+        current = current->next;
+    }
 }

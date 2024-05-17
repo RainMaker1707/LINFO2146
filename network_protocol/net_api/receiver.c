@@ -11,7 +11,7 @@ void switch_response(packet_t* packet, const linkaddr_t *src, const linkaddr_t *
         case DIS:
             LOG_INFO("RECEIVED DIS\n");
             discover(packet, src, dest);
-            send_prt(packet->src);
+            if(get_parent() == NULL) send_prt(packet->src);
             break;
         case DIO:
             LOG_INFO("RECEIVED DIO\n");
@@ -20,7 +20,7 @@ void switch_response(packet_t* packet, const linkaddr_t *src, const linkaddr_t *
         case DIS+ACK:
             LOG_INFO("RECEIVED DIS+ACK\n");
             discover(packet, src, dest);
-            if(get_parent_config())send_prt(packet->src);
+            if(get_parent_config()) send_prt(packet->src);
             break;
         case PRT:
             LOG_INFO("RECEIVED PRT\n");

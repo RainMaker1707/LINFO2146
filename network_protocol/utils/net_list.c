@@ -67,3 +67,10 @@ bool list_contains_src(list_t* list, linkaddr_t* src){
     }
     return false;
 }
+
+
+void free_node(node_t* node){
+    free(node->mote);
+    free(node);
+}
+

@@ -21,25 +21,23 @@ typedef void (*fct_ptr)(packet_t* packet);
 
 
 
-/*
-*/
+
+// ####################### SETTER & GETTER #############################
+
 uint8_t get_rank();
 uint8_t get_type();
 mote_t* get_parent();
-void set_parent(mote_t* mote);
 bool get_parent_config();
 list_t* get_childs();
-
-
-/*
-*/
 fct_ptr get_callback();
-
 list_t* get_neighbors();
 
 
+void set_parent(mote_t* mote);
 
-// ############################### SETUP API ###############################
+
+
+// ########################### SETUP API #################################
 
 /*
     Broadast DIS
@@ -49,9 +47,4 @@ list_t* get_neighbors();
     @Param: accept_childs: if true then the mote will accept child when receive a PRT packet
                             by default set as false
 */
-void setup_gateway(uint8_t type, uint8_t rank, bool accept_child, bool need_parent, void* callback);
-
-void setup_subgateway(uint8_t type, uint8_t rank, bool accept_child, void* callback);
-
-
 void setup_node(uint8_t type, uint8_t rank, void* callback);

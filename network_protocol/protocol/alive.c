@@ -76,3 +76,4 @@ void check_neighbors(list_t* list){
     }
 }
 
+

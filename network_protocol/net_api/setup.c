@@ -28,6 +28,10 @@ void set_parent(mote_t* mote){parent = mote;}
 bool get_parent_config(){return need_parent_config;}
 
 list_t* get_childs(){return childs;}
+
+
+
+
 // ############################### SETUP API ###############################
 
 
@@ -41,8 +45,6 @@ static uint8_t buffer[PACKET_SIZE];
     @Param: accept_childs: if true then the mote will accept child when receive a PRT packet
                             by default set as false
 */
-
-
 void setup_node(uint8_t type, uint8_t rank, void* callback) {
     // NULLNET config
     nullnet_buf = buffer;
@@ -56,7 +58,7 @@ void setup_node(uint8_t type, uint8_t rank, void* callback) {
 
     if(rank == GATEWAY) need_parent_config = false;    // To know if node accept parent
     else need_parent_config = true;
-    
+
     node_rank = rank;
     node_callback = (fct_ptr)callback;
     LOG_INFO("Node setup ok\n");
