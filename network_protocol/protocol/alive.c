@@ -16,7 +16,6 @@ node_t* find_child(list_t* list, linkaddr_t* addr){
     if(list->head == NULL) return NULL;
     node_t* current = list->head;
     while(1){
-        printf("\n");
         if(linkaddr_cmp((linkaddr_t*)&(current->mote->adress), addr)) return current;
         if(current == list->tail) return NULL;
         current = current->next;
@@ -34,7 +33,6 @@ void alive(packet_t* packet){
         int16_t rssi = (int16_t)packetbuf_attr(PACKETBUF_ATTR_RSSI);
         neigh->mote->signal_strenght = rssi;
         // SEND PRT to new parent concurrent
-        printf("TEST: %d, RANK %d -- SRCRK %d\n",packet->src_rank == get_parent()->rank+1, get_parent()->rank, packet->src_rank); 
         if(get_parent_config()){
             if(get_parent() == NULL
             || (get_parent()->signal_strenght < rssi && get_parent()->rank == packet->src_rank) 

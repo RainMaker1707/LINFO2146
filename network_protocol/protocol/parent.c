@@ -36,7 +36,7 @@ void receive_prt(packet_t* packet, linkaddr_t* src){
         send_prt_nack(packet->src);
     }else{
         node_t* node = find_child(get_neighbors(), packet->src);
-        if(node == NULL) LOG_INFO("HERE\n");
+        if(node == NULL) return;
         add_child(get_childs(), node->mote);
         send_prt_ack(packet->src);
     }
